@@ -1,0 +1,50 @@
+package com.theksmith.steeringwheelinterface;
+
+import android.R.style;
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.preference.PreferenceFragment;
+
+
+/**
+ * main entry point activity
+ * starts the background service by default
+ * open the settings screen if called with Intent.ACTION_EDIT 
+ * kills the background service and exits the app if called with Intent.ACTION_DELETE
+ * 
+ * @author Kristoffer Smith <stuff@theksmith.com>
+ */
+public class SteeringWheelInterfaceActivity extends Activity {
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+
+		String action = getIntent().getAction(); 
+		
+		if (action == Intent.ACTION_EDIT) {
+	    	//replace the blank UI with the settings screen	    	
+			this.setTheme(style.Theme_DeviceDefault);	
+
+			PreferenceFragment mSettingsFragment = new SteeringWheelInterfaceSettings();			
+	        getFragmentManager()
+	        		.beginTransaction()
+	                .replace(android.R.id.content, mSettingsFragment)
+	                .commit();
+		} else if (action == Intent.ACTION_DELETE) {
+			//todo: if settings screen is open when this is called, it stays - how to end it?
+			
+			//kill car interface service and exit the app
+			Intent interfaceService = new Intent(getBaseContext(), SteeringWheelInterfaceService.class);
+			stopService(interfaceService);
+			
+			finish();
+		} else {	    	
+			//start the main car interface service and then exit the app
+			Intent interfaceService = new Intent(getBaseContext(), SteeringWheelInterfaceService.class);
+			startService(interfaceService);
+			
+			finish();
+	    }
+	}
+}

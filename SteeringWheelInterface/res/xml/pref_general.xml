@@ -1,0 +1,16 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+	<PreferenceCategory android:key="category_actions" android:title="@string/category_actions_title">
+		<Preference android:key="action_exit" android:title="@string/action_exit_title" android:summary="@string/action_exit_summary">
+	    	<intent android:targetPackage="com.theksmith.steeringwheelinterface" android:targetClass="com.theksmith.steeringwheelinterface.SteeringWheelInterfaceActivity" android:action="android.intent.action.DELETE" />
+		</Preference>
+	</PreferenceCategory>
+	
+	<PreferenceCategory android:key="category_scantool" android:title="@string/category_scantool_title">
+		<EditTextPreference android:title="@string/scantool_baud_title" android:defaultValue="@string/scantool_baud" android:key="scantool_baud" />
+		<CheckBoxPreference android:key="scantool_detach_disconnect" android:defaultValue="@string/scantool_detach_disconnect" 
+		    android:summary="@string/scantool_detach_disconnect_summary" 
+		    android:title="@string/scantool_detach_disconnect_title" />
+	</PreferenceCategory>
+	
+</PreferenceScreen>
