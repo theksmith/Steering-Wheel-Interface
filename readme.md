@@ -9,9 +9,10 @@ This project exists primarily as an example of how to interface an
 Android device with a vehicle bus using inexpensive ELM327/ELM329 based
 OBDII scan tools.
 
-*This is NOT an OBDII or "code reader" type application!* A scan tool is
-used only to provide the interface to other vehicle buses that use 
-OBDII compatible protocols.
+This is NOT an OBDII or "code reader" type application! A scan tool is
+used only to provide the interface to other vehicle buses that happen 
+to also use OBDII standard protocols (SAE J1850 PWM, SAE J1850 VPW, 
+ISO 9141-2, ISO 14230-4 KWP2000, ISO 15765-4 CAN-BUS).
 
 The project was set up to be extensible. Adding support for BlueTooth 
 based scan tools and other bus protocols is the logical next step.
