@@ -70,7 +70,16 @@ CyanogenMod 10 ROM with a 2003 Jeep Grand Cherokee.
 
 (documentation pending)
 
-## Contributors
+## Copyright and License
+
+Copyright 2013 Kristoffer Smith and other contributors
+
+Except for external libraries, this project is licensed under 
+the MIT License.
+
+[http://opensource.org/licenses/MIT](http://opensource.org/licenses/MIT)
+
+## Contributing
 
 GitHub pull requests are welcome! Please contact me if you'd like to do
 a major re-work or extension of the project.
@@ -85,15 +94,12 @@ required.
 [http://code.google.com/p/usb-serial-for-android](http://
 code.google.com/p/usb-serial-for-android)
 
-## Authors
+## Credits
 
-Kristoffer Smith ([http://theksmith.com/](http://theksmith.com/))
+### Authors
 
-## Copyright and License
++ Kristoffer Smith ([http://theksmith.com/](http://theksmith.com/))
 
-Copyright 2013 Kristoffer Smith and other contributors
+### Contributors
 
-Except for external libraries, this project is licensed under 
-the MIT License.
-
-[http://opensource.org/licenses/MIT](http://opensource.org/licenses/MIT)
++ none yet
