@@ -7,10 +7,9 @@
 	</PreferenceCategory>
 	
 	<PreferenceCategory android:key="category_scantool" android:title="@string/category_scantool_title">
-		<EditTextPreference android:title="@string/scantool_baud_title" android:defaultValue="@string/scantool_baud" android:key="scantool_baud" />
-		<CheckBoxPreference android:key="scantool_detach_disconnect" android:defaultValue="@string/scantool_detach_disconnect" 
-		    android:summary="@string/scantool_detach_disconnect_summary" 
-		    android:title="@string/scantool_detach_disconnect_title" />
+		<CheckBoxPreference android:key="scantool_detach_disconnect" android:defaultValue="@string/scantool_detach_disconnect" android:summary="@string/scantool_detach_disconnect_summary" android:title="@string/scantool_detach_disconnect_title" /><EditTextPreference android:title="@string/scantool_baud_title" android:defaultValue="@string/scantool_baud" android:key="scantool_baud" /><EditTextPreference android:key="scantool_device_number" android:defaultValue="@string/scantool_device_number" android:title="@string/scantool_device_number_title"/>
+		
+		
 	</PreferenceCategory>
 	
 </PreferenceScreen>

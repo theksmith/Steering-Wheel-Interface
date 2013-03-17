@@ -18,14 +18,14 @@ public class ButtonActions {
 
 	protected Context mAppContext;
 	protected long mLastActionTime = 0;	
-
+	
+	protected int HARDWARE_BOUNCE_THRESHOLD = 100;	//milliseconds
+	
     //performAction() return statuses
 	public static final int STATUS_SUCCESS = 99;
 	public static final int STATUS_ERROR_HARDWAREBOUNCE = 1;
 	public static final int STATUS_ERROR_UNKNOWNBUTTON = 2;
 	public static final int STATUS_ERROR_ACTIONERROR = 3;
-	
-	public static final int HARDWARE_BOUNCE_THRESHOLD = 50;	//milliseconds
 
 	//the known buttons and the beginning of their corresponding bus messages
 	public static final String BUTTON_LEFT_CENTER = "3D 11 00 80";

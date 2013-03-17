@@ -37,6 +37,7 @@ public class SteeringWheelInterfaceSettings extends PreferenceFragment {
 		exit.setOnPreferenceClickListener(mExitOnClickListener);			
 		
 		bindPreferenceSummaryToValue(findPreference("scantool_baud"));
+		bindPreferenceSummaryToValue(findPreference("scantool_device_number"));
 	}
 	
 		

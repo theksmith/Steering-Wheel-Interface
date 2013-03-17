@@ -46,13 +46,14 @@ based scan tools and other bus protocols is the logical next step.
 +	A Jeep/Chrysler/Dodge vehicle with a SAE J1850 VPW base PCI Bus
 	(many late 90's through mid 2000's models)
 
-Compile and deploy the application. Plug the scan tool into the vehicle
-via the OBDII diagnostic port and into the Android device through the
-USB OTG cable. 
+Compile and deploy the application. Exit the application if running!
+Plug the scan tool into the vehicle via the OBDII diagnostic port and 
+into the Android device through the USB OTG cable. 
 
 Respond to the Android prompt regarding USB device being attached by 
 selecting this app to launch. It is recommended you select the "always" 
-option.
+option. (Note: if you already have a default application for 
+USB-Serial devices, you will need to clear that setting.)
 
 A notification should be seen saying the Steering Wheel Interface started. 
 Click the notification for the settings screen where you can adjust the 

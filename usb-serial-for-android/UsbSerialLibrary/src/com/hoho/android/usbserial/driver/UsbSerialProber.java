@@ -127,8 +127,12 @@ public enum UsbSerialProber {
      * @param supportedDevices map of vendor ids to product id(s)
      * @return {@code true} if supported
      */
-    private static boolean testIfSupported(final UsbDevice usbDevice,
-            final Map<Integer, int[]> supportedDevices) {
+    public static boolean testIfSupported(final UsbDevice usbDevice,
+            final Map<Integer, int[]> supportedDevices) {        
+        /* Kristoffer Smith <stuff@theksmith.com>
+         * changed to public to support acquiring a specific device
+         */
+        
         final int[] supportedProducts = supportedDevices.get(
                 Integer.valueOf(usbDevice.getVendorId()));
         if (supportedProducts == null) {

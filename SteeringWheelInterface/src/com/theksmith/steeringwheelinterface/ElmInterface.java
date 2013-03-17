@@ -1,20 +1,30 @@
 package com.theksmith.steeringwheelinterface;
 
-import com.theksmith.steeringwheelinterface.R;
-
+import java.security.Permission;
+import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PermissionInfo;
+import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
+import com.hoho.android.usbserial.driver.FtdiSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
+import com.theksmith.steeringwheelinterface.ElmInterface.DeviceOpenListener;
 
 
 /**
@@ -27,6 +37,8 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager;
 public class ElmInterface {
 	protected static final String TAG = ElmInterface.class.getSimpleName();
 	
+	protected static final String ACTION_USB_PERMISSION = ElmInterface.class.getPackage().getName() + ".USB_PERMISSION";
+	
 	protected static final int MONITOR_START_WARM_ATTEMPTS = 3;
 	protected static final int MONITOR_START_COLD_ATTEMPTS = 3;
 	
@@ -36,22 +48,30 @@ public class ElmInterface {
 	protected static final int DEFAULT_COMMAND_RETRIES = 3;
 
 	protected Context mAppContext;
+	
+    protected List<DeviceOpenListener> mDeviceOpenEventListeners = new ArrayList<DeviceOpenListener>();
 
-	protected UsbSerialDriver mSerialDevice;
+	protected static enum PermissionStatus { NOT_RESPONDED, ERROR, DENIED, GRANTED };
+	protected PermissionStatus mUsbPermissionStatus = PermissionStatus.NOT_RESPONDED;
+	protected Boolean mUsbPermissionReceiverIsRegistered = false;
+	
 	protected UsbManager mUsbManager;
+	protected UsbSerialDriver mSerialDevice;	
 	protected SerialInputOutputManager mSerialIoManager;
 
-	protected int mStartWarmAttempts = 0;
-	protected int mStartColdAttempts = 0;
-	
-	protected int mStatus = 0;
 	protected String mCommand = "";
 	protected String mResponse = "";
-	
+	protected int mStartWarmAttempts = 0;
+	protected int mStartColdAttempts = 0;
 	protected int mCommandTimeoutTotal = 0;
 	protected int mCommandTimeoutData = 0;
 	protected int mCommandRetries = 0;
 	protected int mCommandRetryCounter = 0;
+	
+	protected int mSettingBaud = 115200;
+	protected int mSettingDeviceNumber = 0;	
+	protected int mStatus = 0;
+	protected int mDeviceID = 0;
 
 	protected static final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
 	protected static final Handler mCommandTimeoutTotal_Timer = new Handler();	
@@ -78,6 +98,16 @@ public class ElmInterface {
 		mAppContext = appContext.getApplicationContext();
 		mButtons = new ButtonActions(mAppContext);
 	}
+
+	
+	public void setBaudRate(int rate) {
+		mSettingBaud = rate;
+	}
+	
+	
+	public void setDeviceNumber(int number) {
+		mSettingDeviceNumber = number;
+	}
 	
 	
 	public int getsStatus() {
@@ -85,51 +115,143 @@ public class ElmInterface {
 	}
 	
 	
-	public int deviceOpen() {
-		if (mUsbManager == null) {			
-			mUsbManager = (UsbManager)mAppContext.getSystemService(Context.USB_SERVICE);
-		}
-		
-        mSerialDevice = UsbSerialProber.acquire(mUsbManager);
-        
-        if (mSerialDevice != null) {
-        	//todo: get explicit permissions for device for when app is not launched from a usb connection intent
-        	
-            try {
-            	Log.i(TAG, "SERIAL DEVICE FOUND: " + mSerialDevice);            	
-            	
-            	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mAppContext);
-            	String baudDefault = mAppContext.getString(R.string.scantool_baud);
-				int baudValue = Integer.parseInt(settings.getString("scantool_baud", baudDefault));
-				
-            	mSerialDevice.setParameters(baudValue, UsbSerialDriver.DATABITS_8, UsbSerialDriver.STOPBITS_1, UsbSerialDriver.PARITY_NONE);
-            	mSerialDevice.open();
-            	
-            	ioManagerReset();
-            	
-            	mStatus = STATUS_OPEN_STOPPED;            	
-            	return mSerialDevice.getDevice().getDeviceId();
-            } catch (Exception ex) {
-                Log.e(TAG, "ERROR OPENING DEVICE", ex);
-            }
-        } else {
-        	Log.w(TAG, "COULD NOT FIND SERIAL DEVICE");
-        }
-
-        deviceClose();
-        
-        mStatus = STATUS_CLOSED_FROMERROR;        
-        return 0;
+	public int getDeviceID() {
+		return mDeviceID;
 	}
     
 	
+	/**
+	 * called by deviceOpen() to obtain user permission to access device
+	 */
+	protected BroadcastReceiver mUsbPermissionReceiver = new BroadcastReceiver() {
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if (ACTION_USB_PERMISSION.equals(action)) {
+				synchronized (this) {
+					UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+
+					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+						if (device != null) {							
+							mUsbPermissionStatus = PermissionStatus.GRANTED;
+							Log.d(TAG, "PERMISSION FOR SERIAL DEVICE GRANTED");							
+							openDeviceFinish(device);
+						} else {
+							mUsbPermissionStatus = PermissionStatus.ERROR;
+							Log.w(TAG, "ERROR OBTAINING SERIAL DEVICE PERMISION - NO DEVICE");
+						}
+					} else {
+						mUsbPermissionStatus = PermissionStatus.DENIED;
+						Log.w(TAG, "PERMISSION FOR SERIAL DEVICE DENIED");
+					}
+				}
+			}
+		}
+	};
+		
+	
+	/**
+	 * finds and opens the serial device. optionally call setBaudRate() and setDeviceNumber() prior to this.
+	 * @param timeout		milliseconds to wait for user response to Android permission dialog
+	 */
+	public void deviceOpen(int timeout) {
+		if (timeout <= 0) {
+			timeout = 5000;
+		}
+		
+		mSerialDevice = null;
+		
+		if (mUsbManager == null) {			
+			mUsbManager = (UsbManager)mAppContext.getSystemService(Context.USB_SERVICE);
+		}
+
+		IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+		mAppContext.registerReceiver(mUsbPermissionReceiver, filter);
+		mUsbPermissionReceiverIsRegistered = true;
+				
+		//connect to nth device per settings
+		int deviceCounter = 0;
+		UsbDevice device = null;
+		
+		HashMap<String, UsbDevice> deviceList = mUsbManager.getDeviceList();				
+		Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
+		
+		while(deviceIterator.hasNext() && deviceCounter <= mSettingDeviceNumber) {
+			device = deviceIterator.next();
+
+			if (device != null && UsbSerialProber.testIfSupported(device, FtdiSerialDriver.getSupportedDevices())) {
+				if (deviceCounter == mSettingDeviceNumber) {					
+					break;
+				} else {				
+					deviceCounter++;
+				}
+			}
+			
+			device = null;			
+		}
+
+		if (device == null) {
+			Log.w(TAG, "COULD NOT FIND SERIAL DEVICE NUMBER: " + mSettingDeviceNumber);	        
+		} else {
+			if (mUsbManager.hasPermission(device)) {
+				mUsbPermissionStatus = PermissionStatus.GRANTED;
+				openDeviceFinish(device);
+			} else {
+
+				Log.i(TAG, "NEED PERMS");
+
+				//get explicit permissions for device for when app is not launched from a usb connection intent
+				PendingIntent devicePermissionIntent = PendingIntent.getBroadcast(mAppContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
+				mUsbManager.requestPermission(device, devicePermissionIntent);
+			}				
+        }
+	}
+	
+	
+	public void openDeviceFinish(UsbDevice device) {
+		try {		    		
+    		mSerialDevice = UsbSerialProber.acquire(mUsbManager, device);
+    		
+    		if (mSerialDevice != null) {
+	        	Log.i(TAG, "SERIAL DEVICE FOUND: " + mSerialDevice);            	
+	        					
+	        	mSerialDevice.setParameters(mSettingBaud, UsbSerialDriver.DATABITS_8, UsbSerialDriver.STOPBITS_1, UsbSerialDriver.PARITY_NONE);
+	        	mSerialDevice.open();
+	        	
+	        	ioManagerReset();
+	        	
+	        	mDeviceID = mSerialDevice.getDevice().getDeviceId();
+	        	mStatus = STATUS_OPEN_STOPPED;
+	        	
+	        	deviceOpenEventFire();
+	        	
+	        	return;	//this is the only successful exit path for this method
+    		} else {
+    			Log.w(TAG, "COULD NOT ACQUIRE SERIAL DEVICE NUMBER: " + mSettingDeviceNumber);
+    		}
+        } catch (Exception ex) {
+            Log.e(TAG, "ERROR OPENING DEVICE", ex);
+        }
+		
+		deviceClose();	        
+        mStatus = STATUS_CLOSED_FROMERROR;
+	}
+	
+	
+	/**
+	 * gracefully closes the current open serial device. no need to call monitorStop() prior.
+	 */
 	public void deviceClose() {
 		deviceClose(false);
 	}
 	
 	
 	protected void deviceClose(Boolean fromError) {
-    	try {
+		if (mUsbPermissionReceiverIsRegistered) {
+			mAppContext.unregisterReceiver(mUsbPermissionReceiver);
+			mUsbPermissionReceiverIsRegistered = false;
+		}
+		
+		try {
     		if (mSerialDevice != null) {
     			monitorStop();    			
     			mSerialDevice.close();
@@ -232,6 +354,10 @@ public class ElmInterface {
     }
 	
 	
+    /**
+     * begin monitoring the serial device. must call deviceOpen() prior.
+     * @throws Exception
+     */
 	public void monitorStart() throws Exception {
 		if (mStatus != STATUS_CLOSED && mStatus != STATUS_CLOSED_FROMERROR) {
 			ioManagerReset();
@@ -247,7 +373,11 @@ public class ElmInterface {
 		}
 	}
 	
-	
+
+	/**
+	 * stops monitoring the serial device. must call deviceOpen() and monitorStart() prior. 
+	 * @throws Exception
+	 */
 	public void monitorStop() throws Exception {
 		monitorStop(false);
 	}
@@ -415,5 +545,40 @@ public class ElmInterface {
 			return true;
 		}
 		return false;
+	}
+
+	
+	public synchronized void deviceOpenEventListenerAdd(DeviceOpenListener listener) {
+		mDeviceOpenEventListeners.add(listener);
+	}
+	
+
+	public synchronized void deviceOpenEventListenerRemove(DeviceOpenListener listener) {
+		mDeviceOpenEventListeners.remove(listener);
+	}
+
+	
+	private synchronized void deviceOpenEventFire() {
+		DeviceOpenEvent event = new DeviceOpenEvent(this);
+		
+		Iterator<DeviceOpenListener> listeners = mDeviceOpenEventListeners.iterator();
+		while (listeners.hasNext()) {
+			listeners.next().onDeviceOpenEvent(event);			
+		}
+	}
+	
+
+	public class DeviceOpenEvent extends EventObject {
+		private static final long serialVersionUID = 1L;
+
+		public DeviceOpenEvent(Object source) {
+	        super(source);
+	    }
+	}
+	
+
+	public interface DeviceOpenListener
+	{
+	    public void onDeviceOpenEvent(DeviceOpenEvent event);
 	}
 }
