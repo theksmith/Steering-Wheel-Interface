@@ -26,17 +26,16 @@ import android.view.KeyEvent;
 public class ButtonActions {
 	protected static final String TAG = ButtonActions.class.getSimpleName();
 	
-	protected static final int HARDWARE_BOUNCE_THRESHOLD = 50;	//milliseconds
+	protected static final int DEBOUNCE_THRESHOLD = 50;	//milliseconds
 	
 	protected Context mAppContext;
 	protected HashMap<String, Long> mBusMessageDebounceTimes = new HashMap<String, Long>();
 	
     //performAction() return status
 	public static final int STATUS_ERROR_UNKNOWN = 0;
-	public static final int STATUS_ERROR_HARDWAREBOUNCE = 1;
-	public static final int STATUS_ERROR_UNKNOWNBUTTON = 2;
-	public static final int STATUS_ERROR_ACTIONERROR = 3;
-	public static final int STATUS_SUCCESS = 4;	
+	public static final int STATUS_ERROR_UNKNOWNBUTTON = 1;
+	public static final int STATUS_ERROR_ACTIONERROR = 2;
+	public static final int STATUS_SUCCESS = 3;	
 
 	//the known buttons and the beginning of their corresponding bus messages
 	//TODO: allow wildcard or regex definitions
@@ -70,24 +69,31 @@ public class ButtonActions {
 	 * @return 					Returns one of the ButtonActions.STATUS_XYZ definitions.
 	 */
 	public int performAction(String forBusMessage) {
-		try {
-			if (isHardwareBounce(forBusMessage)) {
-				Log.i(TAG, "Hardware bounce: " + forBusMessage);
-				return STATUS_ERROR_HARDWAREBOUNCE;
-			}
-			
+		try {			
 			if (forBusMessage.startsWith(BUTTON_LEFT_CENTER)) {
-				btnMediaPause();
+				if (!isHardwareBounce(forBusMessage)) {
+					btnMediaPause();
+				}
 			} else if (forBusMessage.startsWith(BUTTON_LEFT_DOWN)) {
-				btnMediaTrackPrevious();
+				if (!isHardwareBounce(forBusMessage)) {
+					btnMediaTrackPrevious();
+				}
 			} else if (forBusMessage.startsWith(BUTTON_LEFT_UP)) {
-				btnMediaTrackNext();
+				if (!isHardwareBounce(forBusMessage)) {
+					btnMediaTrackNext();
+				}
 			} else if (forBusMessage.startsWith(BUTTON_RIGHT_CENTER)) {
-				btnHomeScreen();
+				if (!isHardwareBounce(forBusMessage)) {
+					btnHomeScreen();
+				}
 			} else if (forBusMessage.startsWith(BUTTON_RIGHT_DOWN)) {
-				btnVolumeDown();
+				if (!isHardwareBounce(forBusMessage)) {
+					btnVolumeDown();
+				}
 			} else if (forBusMessage.startsWith(BUTTON_RIGHT_UP)) {
-				btnVolumeUp();
+				if (!isHardwareBounce(forBusMessage)) {
+					btnVolumeUp();
+				}
 			} else {
 				Log.i(TAG, "Unknown button: " + forBusMessage);
 				return STATUS_ERROR_UNKNOWNBUTTON;
@@ -107,8 +113,10 @@ public class ButtonActions {
 		long now = (new Date()).getTime();		
 		Long last = mBusMessageDebounceTimes.get(busMessage);
 		
-		if (last != null) {
-			if (now - last > HARDWARE_BOUNCE_THRESHOLD) {
+		if (last == null) {
+			isBounce = false;
+		} else {		
+			if (now - last > DEBOUNCE_THRESHOLD) {
 				isBounce = false;
 			}
 		}
