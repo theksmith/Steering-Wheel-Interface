@@ -1,6 +1,7 @@
 package com.theksmith.steeringwheelinterface;
 
 import com.theksmith.steeringwheelinterface.ElmInterface.DeviceOpenEvent;
+import com.theksmith.steeringwheelinterface.ElmInterface.DeviceOpenEventListener;
 import com.theksmith.steeringwheelinterface.R;
 
 import android.app.Notification.Builder;
@@ -18,21 +19,19 @@ import android.hardware.usb.UsbManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.provider.OpenableColumns;
 import android.util.Log;
 import android.widget.Toast;
 
 
 /**
- * background service that keeps running even if main activity is destroyed
- * manages the vehicle interface and provide notifications with it's status
+ * Foreground service that keeps running even when main activity is destroyed.
+ * Manages the vehicle interface and provides status notifications.
  * 
  * @author Kristoffer Smith <stuff@theksmith.com>
  */
 public class SteeringWheelInterfaceService extends Service {
 	protected static final String TAG = SteeringWheelInterfaceService.class.getSimpleName();	
 	
-	protected static final int DEVICE_OPEN_TIMEOUT = 5000;
 	protected static final int WATCHDOG_INTERVAL = 30000;
 	
 	protected final Handler watchdog_Timer = new Handler();
@@ -42,12 +41,11 @@ public class SteeringWheelInterfaceService extends Service {
 	protected int mNoticeID;
 	
 	protected ElmInterface mCarInterface;
-	protected DeviceOpenListener mDeviceOpenListener = new DeviceOpenListener();
+	protected ElmInterfaceOpenedListener mDeviceOpenListener = new ElmInterfaceOpenedListener();
 
 	
 	/**
-	 * watch for device removal
-	 * stop interface or exit app completely depending on settings
+	 * Watch for device removal and stop interface or exit app completely depending on settings.
 	 */
 	public BroadcastReceiver mUsbDetachedReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
@@ -59,7 +57,7 @@ public class SteeringWheelInterfaceService extends Service {
 				if (exitPrefValue) {
 					UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 
-					//verify this notice is actually the specific device we opened, don't close another app's serial device
+					//verify this intent is regarding the specific device we opened, don't close another app's serial device
 					if (device != null && SteeringWheelInterfaceService.this.mCarInterface != null) {
 						if (device.getDeviceId() == SteeringWheelInterfaceService.this.mCarInterface.getDeviceID()) {
 							Intent exitIntent = new Intent(getBaseContext(), SteeringWheelInterfaceActivity.class);
@@ -120,7 +118,7 @@ public class SteeringWheelInterfaceService extends Service {
 		mNoticeManager.notify(mNoticeID, mNoticeBuilder.build());
 		
 		mCarInterface = new ElmInterface(getApplicationContext());
-		mCarInterface.deviceOpenEventListenerAdd(mDeviceOpenListener);
+		mCarInterface.deviceOpenEvent_AddListener(mDeviceOpenListener);
 		
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
     	
@@ -157,7 +155,7 @@ public class SteeringWheelInterfaceService extends Service {
 	
 
 	/**
-	 * monitors the interface and re-starts monitoring or entire interface as needed
+	 * Monitors the interface and re-starts monitoring or re-opens interface as needed.
 	 */
 	protected void carInterfaceRestartIfNeeded() {
 		if (mCarInterface.getsStatus() == ElmInterface.STATUS_OPEN_STOPPED) {
@@ -167,7 +165,7 @@ public class SteeringWheelInterfaceService extends Service {
 				Log.e(TAG, "ERROR STARTING CAR INTERFACE MONITORING", ex);
 			}
 		} else {
-			mCarInterface.deviceOpen(DEVICE_OPEN_TIMEOUT);
+			mCarInterface.deviceOpen();
 			//code flow continues when mDeviceOpenListener.onDeviceOpenEvent() is fired
 		}
 		
@@ -205,7 +203,7 @@ public class SteeringWheelInterfaceService extends Service {
 	}	
 	
 	
-	public class DeviceOpenListener implements ElmInterface.DeviceOpenListener {
+	protected class ElmInterfaceOpenedListener implements DeviceOpenEventListener {
 		@Override
 		public void onDeviceOpenEvent(DeviceOpenEvent event) {			
 			if (mCarInterface.getsStatus() == ElmInterface.STATUS_OPEN_STOPPED) {

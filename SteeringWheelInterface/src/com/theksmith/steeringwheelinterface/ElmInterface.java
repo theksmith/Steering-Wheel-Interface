@@ -1,6 +1,5 @@
 package com.theksmith.steeringwheelinterface;
 
-import java.security.Permission;
 import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.HashMap;
@@ -14,7 +13,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PermissionInfo;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Handler;
@@ -24,12 +22,10 @@ import com.hoho.android.usbserial.driver.FtdiSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
-import com.theksmith.steeringwheelinterface.ElmInterface.DeviceOpenListener;
 
 
 /**
- * interface to the vehicle
- * wraps the serial device with methods to handle our ELM specific interface requirements
+ * Wraps the serial device with methods to handle specific ELM based device communications.
  * 
  * @author Kristoffer Smith <stuff@theksmith.com>
  */
@@ -49,10 +45,9 @@ public class ElmInterface {
 
 	protected Context mAppContext;
 	
-    protected List<DeviceOpenListener> mDeviceOpenEventListeners = new ArrayList<DeviceOpenListener>();
+    protected List<DeviceOpenEventListener> mDeviceOpenEventListeners = new ArrayList<DeviceOpenEventListener>();
 
 	protected static enum PermissionStatus { NOT_RESPONDED, ERROR, DENIED, GRANTED };
-	protected PermissionStatus mUsbPermissionStatus = PermissionStatus.NOT_RESPONDED;
 	protected Boolean mUsbPermissionReceiverIsRegistered = false;
 	
 	protected UsbManager mUsbManager;
@@ -91,7 +86,8 @@ public class ElmInterface {
 
 	
 	/**
-	 * constructor
+	 * Constructor.
+	 * 
 	 * @param appContext	the application context of the creator
 	 */
 	public ElmInterface(Context appContext) {
@@ -121,7 +117,7 @@ public class ElmInterface {
     
 	
 	/**
-	 * called by deviceOpen() to obtain user permission to access device
+	 * Called by deviceOpen() to obtain user permission to access the device.
 	 */
 	protected BroadcastReceiver mUsbPermissionReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
@@ -132,15 +128,12 @@ public class ElmInterface {
 
 					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
 						if (device != null) {							
-							mUsbPermissionStatus = PermissionStatus.GRANTED;
 							Log.d(TAG, "PERMISSION FOR SERIAL DEVICE GRANTED");							
 							openDeviceFinish(device);
 						} else {
-							mUsbPermissionStatus = PermissionStatus.ERROR;
 							Log.w(TAG, "ERROR OBTAINING SERIAL DEVICE PERMISION - NO DEVICE");
 						}
 					} else {
-						mUsbPermissionStatus = PermissionStatus.DENIED;
 						Log.w(TAG, "PERMISSION FOR SERIAL DEVICE DENIED");
 					}
 				}
@@ -150,14 +143,12 @@ public class ElmInterface {
 		
 	
 	/**
-	 * finds and opens the serial device. optionally call setBaudRate() and setDeviceNumber() prior to this.
-	 * @param timeout		milliseconds to wait for user response to Android permission dialog
+	 * Finds and opens the serial device.
+	 * Optionally call setBaudRate() and setDeviceNumber() prior to this.
+	 * 
+	 * @param timeout		Milliseconds to wait for user response to Android permission dialog.
 	 */
-	public void deviceOpen(int timeout) {
-		if (timeout <= 0) {
-			timeout = 5000;
-		}
-		
+	public void deviceOpen() {
 		mSerialDevice = null;
 		
 		if (mUsbManager == null) {			
@@ -168,7 +159,10 @@ public class ElmInterface {
 		mAppContext.registerReceiver(mUsbPermissionReceiver, filter);
 		mUsbPermissionReceiverIsRegistered = true;
 				
-		//connect to nth device per settings
+		/* connect to nth device per settings
+		 * this allows leaving the first device alone for some other apps which
+		 * are not multi-device aware and will grab the first one even if it's open 
+		 */
 		int deviceCounter = 0;
 		UsbDevice device = null;
 		
@@ -193,12 +187,8 @@ public class ElmInterface {
 			Log.w(TAG, "COULD NOT FIND SERIAL DEVICE NUMBER: " + mSettingDeviceNumber);	        
 		} else {
 			if (mUsbManager.hasPermission(device)) {
-				mUsbPermissionStatus = PermissionStatus.GRANTED;
 				openDeviceFinish(device);
 			} else {
-
-				Log.i(TAG, "NEED PERMS");
-
 				//get explicit permissions for device for when app is not launched from a usb connection intent
 				PendingIntent devicePermissionIntent = PendingIntent.getBroadcast(mAppContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
 				mUsbManager.requestPermission(device, devicePermissionIntent);
@@ -222,7 +212,7 @@ public class ElmInterface {
 	        	mDeviceID = mSerialDevice.getDevice().getDeviceId();
 	        	mStatus = STATUS_OPEN_STOPPED;
 	        	
-	        	deviceOpenEventFire();
+	        	deviceOpenEvent_Fire();
 	        	
 	        	return;	//this is the only successful exit path for this method
     		} else {
@@ -238,7 +228,8 @@ public class ElmInterface {
 	
 	
 	/**
-	 * gracefully closes the current open serial device. no need to call monitorStop() prior.
+	 * Gracefully closes the current open serial device.
+	 * Calls monitorStop(), no need to call prior.
 	 */
 	public void deviceClose() {
 		deviceClose(false);
@@ -246,6 +237,8 @@ public class ElmInterface {
 	
 	
 	protected void deviceClose(Boolean fromError) {
+		commandTimeout_TimersStop();
+		
 		if (mUsbPermissionReceiverIsRegistered) {
 			mAppContext.unregisterReceiver(mUsbPermissionReceiver);
 			mUsbPermissionReceiverIsRegistered = false;
@@ -355,7 +348,9 @@ public class ElmInterface {
 	
 	
     /**
-     * begin monitoring the serial device. must call deviceOpen() prior.
+     * Begins monitoring the serial device.
+     * Must call deviceOpen() prior.
+     * 
      * @throws Exception
      */
 	public void monitorStart() throws Exception {
@@ -375,7 +370,9 @@ public class ElmInterface {
 	
 
 	/**
-	 * stops monitoring the serial device. must call deviceOpen() and monitorStart() prior. 
+	 * Stops monitoring the serial device.
+	 * Must have called deviceOpen() and monitorStart() prior.
+	 *  
 	 * @throws Exception
 	 */
 	public void monitorStop() throws Exception {
@@ -473,25 +470,52 @@ public class ElmInterface {
 	}
 	
 	
+	/**
+	 * Send a command to the serial device with no retries and do not expect response.
+	 * 
+	 * @param command			A valid ELM AT Command.
+	 * @return					Returns false if the command was not written correctly to device.
+	 */
+	public Boolean sendCommandBlind(String command) {
+		return sendCommand(command, 0, 0, 0, false, true);
+	}
+	
+	
+	/**
+	 * Retry last command with same params.
+	 * Must call sendCommand() prior.
+	 * 
+	 * @return					Returns false if the command was not written correctly to device.
+	 */
 	public Boolean sendCommandRetry() {
 		return sendCommand(mCommand, mCommandTimeoutTotal, mCommandTimeoutData, mCommandRetries, true, false);
 	}
 	
 	
+	/**
+	 * Send a command to the serial device using the default params.
+	 * 
+	 * @param command			A valid ELM AT Command.
+	 * @return					Returns false if the command was not written correctly to device.
+	 */
 	public Boolean sendCommand(String command) {
 		return sendCommand(command, DEFAULT_COMMAND_TOTAL_TIMEOUT, DEFAULT_COMMAND_DATA_TIMEOUT, DEFAULT_COMMAND_RETRIES, false, false); 
 	}
 	
 	
+	/**
+	 * Send a command to the serial device.
+	 * 
+	 * @param command			A valid ELM AT Command.
+	 * @param timeoutTotal		Total milliseconds to wait for a complete response before retrying.
+	 * @param timeoutData		Milliseconds to wait between partial response fragments before retrying. 
+	 * @param retries			Number of times to retry command if a complete response is not received (or if timeouts occur)
+	 * @return					Returns false if the command was not written correctly to device.
+	 */
 	public Boolean sendCommand(String command, int timeoutTotal, int timeoutData, int retries) {
 		return sendCommand(command, timeoutTotal, timeoutData, retries, false, false); 
 	}
-	
-	
-	protected Boolean sendCommandBlind(String command) {
-		return sendCommand(command, 0, 0, 0, false, true);
-	}
-	
+
 	
 	protected Boolean sendCommand(String command, int timeoutTotal, int timeoutData, int retries, Boolean isRetry, Boolean isBlind) {
 		commandTimeout_TimersStop();
@@ -532,7 +556,7 @@ public class ElmInterface {
 		command += "\r";		
 		byte[] bytes = command.getBytes();
 		int written = 0;
-		
+
 		if (mSerialDevice != null) {
 			try {
 				written = mSerialDevice.write(bytes, DEFAULT_COMMAND_SEND_TIMEOUT);
@@ -548,25 +572,25 @@ public class ElmInterface {
 	}
 
 	
-	public synchronized void deviceOpenEventListenerAdd(DeviceOpenListener listener) {
-		mDeviceOpenEventListeners.add(listener);
-	}
-	
-
-	public synchronized void deviceOpenEventListenerRemove(DeviceOpenListener listener) {
-		mDeviceOpenEventListeners.remove(listener);
-	}
-
-	
-	private synchronized void deviceOpenEventFire() {
+	private synchronized void deviceOpenEvent_Fire() {
 		DeviceOpenEvent event = new DeviceOpenEvent(this);
 		
-		Iterator<DeviceOpenListener> listeners = mDeviceOpenEventListeners.iterator();
+		Iterator<DeviceOpenEventListener> listeners = mDeviceOpenEventListeners.iterator();
 		while (listeners.hasNext()) {
 			listeners.next().onDeviceOpenEvent(event);			
 		}
 	}
 	
+	
+	public synchronized void deviceOpenEvent_AddListener(DeviceOpenEventListener listener) {
+		mDeviceOpenEventListeners.add(listener);
+	}
+	
+
+	public synchronized void deviceOpenEvent_RemoveListener(DeviceOpenEventListener listener) {
+		mDeviceOpenEventListeners.remove(listener);
+	}
+
 
 	public class DeviceOpenEvent extends EventObject {
 		private static final long serialVersionUID = 1L;
@@ -577,7 +601,7 @@ public class ElmInterface {
 	}
 	
 
-	public interface DeviceOpenListener
+	public interface DeviceOpenEventListener
 	{
 	    public void onDeviceOpenEvent(DeviceOpenEvent event);
 	}
