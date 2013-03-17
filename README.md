@@ -1,6 +1,6 @@
 # Steering Wheel Interface
 
-An Android application for interfacing with the steering wheel radio control buttons in certain Jeep/Chrysler/Dodge vehicles.
+Android application for interfacing with the steering wheel radio control buttons in certain Jeep/Chrysler/Dodge vehicles.
 
 ## Purpose
 
@@ -8,11 +8,11 @@ This project exists primarily as an example of how to interface an Android devic
 
 This is NOT an OBDII or "code reader" type application! A scan tool is used only to provide the interface to other vehicle buses that happen to also use OBDII standard protocols (SAE J1850 PWM, SAE J1850 VPW, ISO 9141-2, ISO 14230-4 KWP2000, ISO 15765-4 CAN-BUS).
 
-The application is not likely useful to many people exactly as-is, but is designed to be extended to work with your specific vehicle/scenario. Note that only USB scan tools are currently supported, though adding support for BlueTooth scan tools should be relatively simple.
+The application is not likely useful to many people exactly as-is, but is designed to be extended to work with your specific vehicle/scenario. Note that only USB scan tools are currently supported, though adding support for BlueTooth  should be relatively simple.
 
 ## Getting Started
 
-### To test the application as-is you need:
+### To test the application as-is requires:
 
 +	An Android device with USB Host support running Android 4.1 (Jelly Bean) or newer.
 	
