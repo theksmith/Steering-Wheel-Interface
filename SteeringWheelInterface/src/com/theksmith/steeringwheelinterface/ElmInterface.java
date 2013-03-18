@@ -1,31 +1,39 @@
 package com.theksmith.steeringwheelinterface;
 
-import com.theksmith.steeringwheelinterface.R;
-
+import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
+import com.hoho.android.usbserial.driver.FtdiSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 
 /**
- * interface to the vehicle
- * wraps the serial device with methods to handle our ELM specific interface requirements
+ * Wraps the serial device with methods to handle specific ELM based device communications.
  * 
  * @author Kristoffer Smith <stuff@theksmith.com>
  */
 
 public class ElmInterface {
 	protected static final String TAG = ElmInterface.class.getSimpleName();
+	
+	protected static final String ACTION_USB_PERMISSION = ElmInterface.class.getPackage().getName() + ".USB_PERMISSION";
 	
 	protected static final int MONITOR_START_WARM_ATTEMPTS = 3;
 	protected static final int MONITOR_START_COLD_ATTEMPTS = 3;
@@ -34,24 +42,36 @@ public class ElmInterface {
 	protected static final int DEFAULT_COMMAND_SEND_TIMEOUT = 250;
 	protected static final int DEFAULT_COMMAND_DATA_TIMEOUT = 1000;
 	protected static final int DEFAULT_COMMAND_RETRIES = 3;
+	
+	protected static final int DEFAULT_RESET_COMMAND_TOTAL_TIMEOUT = 5000;
+	protected static final int DEFAULT_MONITOR_COMMAND_DATA_TIMEOUT = 5000;
 
 	protected Context mAppContext;
+	
+    protected List<DeviceOpenEventListener> mDeviceOpenEventListeners = new ArrayList<DeviceOpenEventListener>();
 
-	protected UsbSerialDriver mSerialDevice;
+	protected static enum PermissionStatus { NOT_RESPONDED, ERROR, DENIED, GRANTED };
+	protected Boolean mUsbPermissionReceiverIsRegistered = false;
+	
 	protected UsbManager mUsbManager;
+	protected UsbSerialDriver mSerialDevice;	
 	protected SerialInputOutputManager mSerialIoManager;
 
-	protected int mStartWarmAttempts = 0;
-	protected int mStartColdAttempts = 0;
-	
-	protected int mStatus = 0;
 	protected String mCommand = "";
 	protected String mResponse = "";
-	
+	protected int mStartWarmAttempts = 0;
+	protected int mStartColdAttempts = 0;
 	protected int mCommandTimeoutTotal = 0;
 	protected int mCommandTimeoutData = 0;
 	protected int mCommandRetries = 0;
 	protected int mCommandRetryCounter = 0;
+	
+	protected int mSettingDeviceNumber = 1;
+	protected int mSettingBaud = 115200;
+	protected String mSettingProtocolCommand = "ATSP2";	//setting for our original project use in a 2003 Jeep/Chrysler/Dodge
+	protected String mSettingMonitorCommand = "ATMR11";	//setting for our original project use in a 2003 Jeep/Chrysler/Dodge
+	protected int mStatus = 0;
+	protected int mDeviceID = 0;
 
 	protected static final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
 	protected static final Handler mCommandTimeoutTotal_Timer = new Handler();	
@@ -71,7 +91,8 @@ public class ElmInterface {
 
 	
 	/**
-	 * constructor
+	 * Constructor.
+	 * 
 	 * @param appContext	the application context of the creator
 	 */
 	public ElmInterface(Context appContext) {
@@ -80,56 +101,165 @@ public class ElmInterface {
 	}
 	
 	
+	public void setDeviceNumber(int number) {
+		mSettingDeviceNumber = number;
+	}
+	
+
+	public void setBaudRate(int rate) {
+		mSettingBaud = rate;
+	}
+	
+	
+	public void setProtocolCommand(String command) {
+		mSettingProtocolCommand = command;
+	}
+	
+	
+	public void setMonitorCommand(String command) {
+		mSettingMonitorCommand = command;
+	}
+
+	
 	public int getsStatus() {
 		return mStatus;
 	}
 	
 	
-	public int deviceOpen() {
-		if (mUsbManager == null) {			
-			mUsbManager = (UsbManager)mAppContext.getSystemService(Context.USB_SERVICE);
-		}
-		
-        mSerialDevice = UsbSerialProber.acquire(mUsbManager);
-        
-        if (mSerialDevice != null) {
-        	//todo: get explicit permissions for device for when app is not launched from a usb connection intent
-        	
-            try {
-            	Log.i(TAG, "SERIAL DEVICE FOUND: " + mSerialDevice);            	
-            	
-            	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mAppContext);
-            	String baudDefault = mAppContext.getString(R.string.scantool_baud);
-				int baudValue = Integer.parseInt(settings.getString("scantool_baud", baudDefault));
-				
-            	mSerialDevice.setParameters(baudValue, UsbSerialDriver.DATABITS_8, UsbSerialDriver.STOPBITS_1, UsbSerialDriver.PARITY_NONE);
-            	mSerialDevice.open();
-            	
-            	ioManagerReset();
-            	
-            	mStatus = STATUS_OPEN_STOPPED;            	
-            	return mSerialDevice.getDevice().getDeviceId();
-            } catch (Exception ex) {
-                Log.e(TAG, "ERROR OPENING DEVICE", ex);
-            }
-        } else {
-        	Log.w(TAG, "COULD NOT FIND SERIAL DEVICE");
-        }
-
-        deviceClose();
-        
-        mStatus = STATUS_CLOSED_FROMERROR;        
-        return 0;
+	public int getDeviceID() {
+		return mDeviceID;
 	}
     
 	
+	/**
+	 * Called by deviceOpen() to obtain user permission to access the device.
+	 */
+	protected BroadcastReceiver mUsbPermissionReceiver = new BroadcastReceiver() {
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if (ACTION_USB_PERMISSION.equals(action)) {
+				synchronized (this) {
+					UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+
+					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+						if (device != null) {							
+							Log.d(TAG, "PERMISSION FOR SERIAL DEVICE GRANTED");							
+							openDeviceFinish(device);
+						} else {
+							Log.w(TAG, "ERROR OBTAINING SERIAL DEVICE PERMISION - NO DEVICE");
+						}
+					} else {
+						Log.w(TAG, "PERMISSION FOR SERIAL DEVICE DENIED");
+					}
+				}
+			}
+		}
+	};
+		
+	
+	/**
+	 * Finds and opens the serial device.
+	 * Optionally call setDeviceNumber() and setBaudRate() prior.
+	 * 
+	 * @param timeout		Milliseconds to wait for user response to Android permission dialog.
+	 */
+	public void deviceOpen() {
+		mSerialDevice = null;
+		
+		if (mUsbManager == null) {			
+			mUsbManager = (UsbManager)mAppContext.getSystemService(Context.USB_SERVICE);
+		}
+
+		IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+		mAppContext.registerReceiver(mUsbPermissionReceiver, filter);
+		mUsbPermissionReceiverIsRegistered = true;
+				
+		/* connect to nth device per settings
+		 * this allows leaving the first device alone for some other apps which
+		 * are not multi-device aware and will grab the first one even if it's open 
+		 */
+		int deviceCounter = 1;
+		UsbDevice device = null;
+		
+		HashMap<String, UsbDevice> deviceList = mUsbManager.getDeviceList();				
+		Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
+		
+		while(deviceIterator.hasNext() && deviceCounter <= mSettingDeviceNumber) {
+			device = deviceIterator.next();
+
+			if (device != null && UsbSerialProber.testIfSupported(device, FtdiSerialDriver.getSupportedDevices())) {
+				if (deviceCounter == mSettingDeviceNumber) {					
+					break;
+				} else {				
+					deviceCounter++;
+				}
+			}
+			
+			device = null;			
+		}
+
+		if (device == null) {
+			Log.w(TAG, "COULD NOT FIND SERIAL DEVICE NUMBER: " + mSettingDeviceNumber);	        
+		} else {
+			if (mUsbManager.hasPermission(device)) {
+				openDeviceFinish(device);
+			} else {
+				//get explicit permissions for device for when app is not launched from a usb connection intent
+				PendingIntent devicePermissionIntent = PendingIntent.getBroadcast(mAppContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
+				mUsbManager.requestPermission(device, devicePermissionIntent);
+			}				
+        }
+	}
+	
+	
+	public void openDeviceFinish(UsbDevice device) {
+		try {		    		
+    		mSerialDevice = UsbSerialProber.acquire(mUsbManager, device);
+    		
+    		if (mSerialDevice != null) {
+	        	Log.i(TAG, "SERIAL DEVICE FOUND: " + mSerialDevice);            	
+	        					
+	        	mSerialDevice.setParameters(mSettingBaud, UsbSerialDriver.DATABITS_8, UsbSerialDriver.STOPBITS_1, UsbSerialDriver.PARITY_NONE);
+	        	mSerialDevice.open();
+	        	
+	        	ioManagerReset();
+	        	
+	        	mDeviceID = mSerialDevice.getDevice().getDeviceId();
+	        	mStatus = STATUS_OPEN_STOPPED;
+	        	
+	        	deviceOpenEvent_Fire();
+	        	
+	        	return;	//this is the only successful exit path for this method
+    		} else {
+    			Log.w(TAG, "COULD NOT ACQUIRE SERIAL DEVICE NUMBER: " + mSettingDeviceNumber);
+    		}
+        } catch (Exception ex) {
+            Log.e(TAG, "ERROR OPENING DEVICE", ex);
+        }
+		
+		deviceClose();	        
+        mStatus = STATUS_CLOSED_FROMERROR;
+	}
+	
+	
+	/**
+	 * Gracefully closes the current open serial device.
+	 * Calls monitorStop(), no need to call prior.
+	 */
 	public void deviceClose() {
 		deviceClose(false);
 	}
 	
 	
 	protected void deviceClose(Boolean fromError) {
-    	try {
+		commandTimeout_TimersStop();
+		
+		if (mUsbPermissionReceiverIsRegistered) {
+			mAppContext.unregisterReceiver(mUsbPermissionReceiver);
+			mUsbPermissionReceiverIsRegistered = false;
+		}
+		
+		try {
     		if (mSerialDevice != null) {
     			monitorStop();    			
     			mSerialDevice.close();
@@ -217,12 +347,12 @@ public class ElmInterface {
     	} else if (mCommand == "ATH1") {
     		if (!mResponse.contains(mCommand) || !mResponse.contains(">") || !mResponse.contains("OK")) return;    		
     		Log.d(TAG, "HEADERS ON");
-    		sendCommand("ATSP2");
-    	} else if (mCommand == "ATSP2") {
+    		sendCommand(mSettingProtocolCommand);
+    	} else if (mCommand == mSettingProtocolCommand) {
     		if (!mResponse.contains(mCommand) || !mResponse.contains(">") || !mResponse.contains("OK")) return;    		
     		Log.d(TAG, "PROTOCOL SET");
-    		sendCommand("ATMR11", 0, 5000, 3);    	
-    	} else if (mCommand == "ATMR11") {
+    		sendCommand(mSettingMonitorCommand, 0, DEFAULT_MONITOR_COMMAND_DATA_TIMEOUT, DEFAULT_COMMAND_RETRIES);    	
+    	} else if (mCommand == mSettingMonitorCommand) {
     		if (!mResponse.contains("\r") && !mResponse.contains("\n")) return;
     		mButtons.performAction(mResponse.trim());
     		mResponse = "";
@@ -232,6 +362,13 @@ public class ElmInterface {
     }
 	
 	
+    /**
+     * Begins monitoring the serial device.
+     * Must call deviceOpen() prior.
+     * Optionally call setProtocolCommand() prior.
+     * 
+     * @throws Exception
+     */
 	public void monitorStart() throws Exception {
 		if (mStatus != STATUS_CLOSED && mStatus != STATUS_CLOSED_FROMERROR) {
 			ioManagerReset();
@@ -247,7 +384,13 @@ public class ElmInterface {
 		}
 	}
 	
-	
+
+	/**
+	 * Stops monitoring the serial device.
+	 * Must have called deviceOpen() and monitorStart() prior.
+	 *  
+	 * @throws Exception
+	 */
 	public void monitorStop() throws Exception {
 		monitorStop(false);
 	}
@@ -278,7 +421,7 @@ public class ElmInterface {
 	protected void monitorStartWarm() {
 		if (mStartWarmAttempts < MONITOR_START_WARM_ATTEMPTS) {
 			Log.d(TAG, "MONITORING WARM START ATTEMPT: " + mStartWarmAttempts);
-	        sendCommand("ATI", 2500, 0, 1);
+	        sendCommand("ATI", DEFAULT_RESET_COMMAND_TOTAL_TIMEOUT, 0, 1);
 		} else {
 			Log.d(TAG, "MONITORING WARM START - TOO MANY ATTEMPTS");
 			monitorStartCold();
@@ -291,7 +434,7 @@ public class ElmInterface {
 	protected void monitorStartCold() {
 		if (mStartColdAttempts < MONITOR_START_COLD_ATTEMPTS) {
 			Log.d(TAG, "MONITORING COLD START ATTEMPT: " + mStartColdAttempts);
-			sendCommand("ATZ", 5000, 0, 1);
+			sendCommand("ATZ", DEFAULT_RESET_COMMAND_TOTAL_TIMEOUT, 0, 1);
 		} else {
 			Log.d(TAG, "MONITORING COLD START - TOO MANY ATTEMPTS");
 			try {
@@ -343,25 +486,52 @@ public class ElmInterface {
 	}
 	
 	
+	/**
+	 * Send a command to the serial device with no retries and do not expect response.
+	 * 
+	 * @param command			A valid ELM AT Command.
+	 * @return					Returns false if the command was not written correctly to device.
+	 */
+	public Boolean sendCommandBlind(String command) {
+		return sendCommand(command, 0, 0, 0, false, true);
+	}
+	
+	
+	/**
+	 * Retry last command with same params.
+	 * Must call sendCommand() prior.
+	 * 
+	 * @return					Returns false if the command was not written correctly to device.
+	 */
 	public Boolean sendCommandRetry() {
 		return sendCommand(mCommand, mCommandTimeoutTotal, mCommandTimeoutData, mCommandRetries, true, false);
 	}
 	
 	
+	/**
+	 * Send a command to the serial device using the default params.
+	 * 
+	 * @param command			A valid ELM AT Command.
+	 * @return					Returns false if the command was not written correctly to device.
+	 */
 	public Boolean sendCommand(String command) {
 		return sendCommand(command, DEFAULT_COMMAND_TOTAL_TIMEOUT, DEFAULT_COMMAND_DATA_TIMEOUT, DEFAULT_COMMAND_RETRIES, false, false); 
 	}
 	
 	
+	/**
+	 * Send a command to the serial device.
+	 * 
+	 * @param command			A valid ELM AT Command.
+	 * @param timeoutTotal		Total milliseconds to wait for a complete response before retrying.
+	 * @param timeoutData		Milliseconds to wait between partial response fragments before retrying. 
+	 * @param retries			Number of times to retry command if a complete response is not received (or if timeouts occur)
+	 * @return					Returns false if the command was not written correctly to device.
+	 */
 	public Boolean sendCommand(String command, int timeoutTotal, int timeoutData, int retries) {
 		return sendCommand(command, timeoutTotal, timeoutData, retries, false, false); 
 	}
-	
-	
-	protected Boolean sendCommandBlind(String command) {
-		return sendCommand(command, 0, 0, 0, false, true);
-	}
-	
+
 	
 	protected Boolean sendCommand(String command, int timeoutTotal, int timeoutData, int retries, Boolean isRetry, Boolean isBlind) {
 		commandTimeout_TimersStop();
@@ -402,7 +572,7 @@ public class ElmInterface {
 		command += "\r";		
 		byte[] bytes = command.getBytes();
 		int written = 0;
-		
+
 		if (mSerialDevice != null) {
 			try {
 				written = mSerialDevice.write(bytes, DEFAULT_COMMAND_SEND_TIMEOUT);
@@ -415,5 +585,40 @@ public class ElmInterface {
 			return true;
 		}
 		return false;
+	}
+
+	
+	private synchronized void deviceOpenEvent_Fire() {
+		DeviceOpenEvent event = new DeviceOpenEvent(this);
+		
+		Iterator<DeviceOpenEventListener> listeners = mDeviceOpenEventListeners.iterator();
+		while (listeners.hasNext()) {
+			listeners.next().onDeviceOpenEvent(event);			
+		}
+	}
+	
+	
+	public synchronized void deviceOpenEvent_AddListener(DeviceOpenEventListener listener) {
+		mDeviceOpenEventListeners.add(listener);
+	}
+	
+
+	public synchronized void deviceOpenEvent_RemoveListener(DeviceOpenEventListener listener) {
+		mDeviceOpenEventListeners.remove(listener);
+	}
+
+
+	public class DeviceOpenEvent extends EventObject {
+		private static final long serialVersionUID = 1L;
+
+		public DeviceOpenEvent(Object source) {
+	        super(source);
+	    }
+	}
+	
+
+	public interface DeviceOpenEventListener
+	{
+	    public void onDeviceOpenEvent(DeviceOpenEvent event);
 	}
 }

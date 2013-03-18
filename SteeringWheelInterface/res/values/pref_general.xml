@@ -1,12 +1,44 @@
 <resources>
 
-<string name="category_actions_title">Actions</string><string name="action_exit_title">Stop &amp; Exit</string>
-<string name="action_exit_summary">Click this to stop monitoring and exit now</string>
-<string name="category_scantool_title">Scantool Device Settings</string>
-<string name="scantool_baud">38400</string>
-<string name="scantool_baud_title">Scantool Baud Rate</string>
-<string name="scantool_detach_disconnect">true</string>
-<string name="scantool_detach_disconnect_title">Exit On Disconnect</string>
-<string name="scantool_detach_disconnect_summary">Exit app if scantool is disconnected</string>
-
+    <string name="category_actions_title">Actions</string>
+    <string name="action_exit_title">Stop &amp; Exit</string>
+    <string name="action_exit_summary">Click this to stop monitoring and exit now</string>
+    <string name="category_scantool_title">Scantool Device Settings</string>
+    <string name="scantool_detach_disconnect_title">Exit On Disconnect</string>
+    <string name="scantool_detach_disconnect">true</string>
+    <string name="scantool_device_number">1</string>
+    <string name="scantool_device_number_title">Scantool Device Number</string>
+    <string name="scantool_baud">38400</string>
+    <string name="scantool_baud_title">Scantool Baud Rate</string>
+    <string name="scantool_protocol">ATSP2</string>
+    <string name="scantool_protocol_title">Scantool Protocol</string>
+    <string-array name="scantool_protocol_entries">
+        <item>Automatic</item>
+        <item>SAE J1850 PWM (41.6 kbaud)</item>
+        <item>SAE J1850 VPW (10.4 kbaud)</item>
+        <item>ISO 9141&#8211;2 (5 baud init, 10.4 kbaud)</item>
+        <item>ISO 14230&#8211;4 KWP (5 baud init, 10.4 kbaud)</item>
+        <item>ISO 14230&#8211;4 KWP (fast init, 10.4 kbaud)</item>
+        <item>ISO 15765&#8211;4 CAN (11 bit ID, 500 kbaud)</item>
+        <item>ISO 15765&#8211;4 CAN (29 bit ID, 500 kbaud)</item>
+        <item>ISO 15765&#8211;4 CAN (11 bit ID, 250 kbaud)</item>
+        <item>ISO 15765&#8211;4 CAN (29 bit ID, 250 kbaud)</item>
+        <item>SAE J1939 CAN (29 bit ID, 250 kbaud)</item>
+    </string-array>
+    <string-array name="scantool_protocol_values">
+        <item>ATSP0</item>
+        <item>ATSP1</item>
+        <item>ATSP2</item>
+        <item>ATSP3</item>
+        <item>ATSP4</item>
+        <item>ATSP5</item>
+        <item>ATSP6</item>
+        <item>ATSP7</item>
+        <item>ATSP8</item>
+        <item>ATSP9</item>
+        <item>ATSPA</item>
+    </string-array>
+    <string name="scantool_monitor_command">ATMR11</string>
+    <string name="scantool_monitor_command_title">Scantool Monitor Command</string>
+        
 </resources>

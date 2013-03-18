@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Steering Wheel Interface</string>    
+    <string name="app_name">Steering Wheel Interface</string>
     <string name="msg_app_starting">Starting</string>
     <string name="msg_monitoring">Monitoring</string>
     <string name="msg_monitoring_stopped">Stopped</string>
-    <string name="msg_device_disconnected">Steering Wheel Interface has exited (scantool removed)</string>    
+    <string name="msg_device_disconnected">Steering Wheel Interface has exited (scantool removed)</string>
 
 </resources>

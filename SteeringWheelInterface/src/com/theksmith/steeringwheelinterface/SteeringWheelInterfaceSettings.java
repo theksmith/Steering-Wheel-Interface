@@ -12,7 +12,7 @@ import android.preference.PreferenceManager;
 
 
 /**
- * a simple settings screen (the app's only UI)
+ * A simple settings screen (the app's only UI).
  * 
  * @author Kristoffer Smith <stuff@theksmith.com>
  */
@@ -33,21 +33,18 @@ public class SteeringWheelInterfaceSettings extends PreferenceFragment {
 		
 		addPreferencesFromResource(R.xml.pref_general);
 
+		//actions (prefs acting only as buttons)
 		Preference exit = findPreference("action_exit");
 		exit.setOnPreferenceClickListener(mExitOnClickListener);			
 		
-		bindPreferenceSummaryToValue(findPreference("scantool_baud"));
+		//for textbox type prefs
+		bindTxtPrefSummaryToValue(findPreference("scantool_baud"));
+		bindTxtPrefSummaryToValue(findPreference("scantool_device_number"));
+		bindTxtPrefSummaryToValue(findPreference("scantool_monitor_command"));
+		
+		//TODO: create bindListPrefSummaryToValue() type functionality for the "scantool_protocol" pref
 	}
 	
-		
-	protected void bindPreferenceSummaryToValue(Preference preference) {
-		preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
-
-		sBindPreferenceSummaryToValueListener.onPreferenceChange(
-				preference,
-				PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getString(preference.getKey(), ""));
-	}
-
 	
 	protected OnPreferenceClickListener mExitOnClickListener = new OnPreferenceClickListener() {		
 		@Override
@@ -57,8 +54,17 @@ public class SteeringWheelInterfaceSettings extends PreferenceFragment {
 		}
 	};
 	
+	
+	protected void bindTxtPrefSummaryToValue(Preference preference) {
+		preference.setOnPreferenceChangeListener(mTxtPrefChangeListener);
 
-	protected OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
+		mTxtPrefChangeListener.onPreferenceChange(
+				preference,
+				PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getString(preference.getKey(), ""));
+	}
+
+	
+	protected OnPreferenceChangeListener mTxtPrefChangeListener = new Preference.OnPreferenceChangeListener() {
 		@Override
 		public boolean onPreferenceChange(Preference preference, Object value) {
 			String stringValue = value.toString();

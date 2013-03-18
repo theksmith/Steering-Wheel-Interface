@@ -8,10 +8,10 @@ import android.preference.PreferenceFragment;
 
 
 /**
- * main entry point activity
- * starts the background service by default
- * open the settings screen if called with Intent.ACTION_EDIT 
- * kills the background service and exits the app if called with Intent.ACTION_DELETE
+ * Main entry point activity, has no UI.
+ * Starts the background service by default.
+ * Opens the settings screen if called with Intent.ACTION_EDIT. 
+ * Kills the background service and exits the app if called with Intent.ACTION_DELETE.
  * 
  * @author Kristoffer Smith <stuff@theksmith.com>
  */
@@ -32,7 +32,7 @@ public class SteeringWheelInterfaceActivity extends Activity {
 	                .replace(android.R.id.content, mSettingsFragment)
 	                .commit();
 		} else if (action == Intent.ACTION_DELETE) {
-			//todo: if settings screen is open when this is called, it stays - how to end it?
+			//TODO: if settings screen is open when this is called, it stays - how to end it?
 			
 			//kill car interface service and exit the app
 			Intent interfaceService = new Intent(getBaseContext(), SteeringWheelInterfaceService.class);

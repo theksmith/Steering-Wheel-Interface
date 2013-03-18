@@ -1,16 +1,43 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
 
-	<PreferenceCategory android:key="category_actions" android:title="@string/category_actions_title">
-		<Preference android:key="action_exit" android:title="@string/action_exit_title" android:summary="@string/action_exit_summary">
-	    	<intent android:targetPackage="com.theksmith.steeringwheelinterface" android:targetClass="com.theksmith.steeringwheelinterface.SteeringWheelInterfaceActivity" android:action="android.intent.action.DELETE" />
-		</Preference>
+    <PreferenceCategory
+        android:key="category_actions"
+        android:title="@string/category_actions_title" >
+        <Preference
+            android:key="action_exit"
+            android:summary="@string/action_exit_summary"
+            android:title="@string/action_exit_title" >
+            <intent
+                android:action="android.intent.action.DELETE"
+                android:targetClass="com.theksmith.steeringwheelinterface.SteeringWheelInterfaceActivity"
+                android:targetPackage="com.theksmith.steeringwheelinterface" />
+        </Preference>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_scantool"
+        android:title="@string/category_scantool_title" >
+        <CheckBoxPreference
+            android:defaultValue="@string/scantool_detach_disconnect"
+            android:key="scantool_detach_disconnect"
+            android:title="@string/scantool_detach_disconnect_title" />
+        <EditTextPreference
+            android:defaultValue="@string/scantool_device_number"
+            android:key="scantool_device_number"
+            android:title="@string/scantool_device_number_title" />
+        <EditTextPreference
+            android:defaultValue="@string/scantool_baud"
+            android:key="scantool_baud"
+            android:title="@string/scantool_baud_title" />
+        <ListPreference
+            android:defaultValue="@string/scantool_protocol" 
+            android:entries="@array/scantool_protocol_entries"
+            android:entryValues="@array/scantool_protocol_values"
+            android:key="scantool_protocol"
+            android:title="@string/scantool_protocol_title" />
+        <EditTextPreference
+            android:defaultValue="@string/scantool_monitor_command"
+            android:key="scantool_monitor_command"
+            android:title="@string/scantool_monitor_command_title" />
 	</PreferenceCategory>
-	
-	<PreferenceCategory android:key="category_scantool" android:title="@string/category_scantool_title">
-		<EditTextPreference android:title="@string/scantool_baud_title" android:defaultValue="@string/scantool_baud" android:key="scantool_baud" />
-		<CheckBoxPreference android:key="scantool_detach_disconnect" android:defaultValue="@string/scantool_detach_disconnect" 
-		    android:summary="@string/scantool_detach_disconnect_summary" 
-		    android:title="@string/scantool_detach_disconnect_title" />
-	</PreferenceCategory>
-	
+
 </PreferenceScreen>

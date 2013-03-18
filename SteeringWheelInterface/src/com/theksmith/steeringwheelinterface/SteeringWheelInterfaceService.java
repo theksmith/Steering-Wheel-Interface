@@ -1,5 +1,7 @@
 package com.theksmith.steeringwheelinterface;
 
+import com.theksmith.steeringwheelinterface.ElmInterface.DeviceOpenEvent;
+import com.theksmith.steeringwheelinterface.ElmInterface.DeviceOpenEventListener;
 import com.theksmith.steeringwheelinterface.R;
 
 import android.app.Notification.Builder;
@@ -22,8 +24,8 @@ import android.widget.Toast;
 
 
 /**
- * background service that keeps running even if main activity is destroyed
- * manages the vehicle interface and provide notifications with it's status
+ * Foreground service that keeps running even when main activity is destroyed.
+ * Manages the vehicle interface and provides status notifications.
  * 
  * @author Kristoffer Smith <stuff@theksmith.com>
  */
@@ -39,12 +41,11 @@ public class SteeringWheelInterfaceService extends Service {
 	protected int mNoticeID;
 	
 	protected ElmInterface mCarInterface;
-	protected int mCarInterfaceID = 0;
+	protected ElmInterfaceOpenedListener mDeviceOpenListener = new ElmInterfaceOpenedListener();
 
 	
 	/**
-	 * watch for device removal
-	 * stop interface or exit app completely depending on settings
+	 * Watch for device removal and stop interface or exit app completely depending on settings.
 	 */
 	public BroadcastReceiver mUsbDetachedReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
@@ -55,17 +56,17 @@ public class SteeringWheelInterfaceService extends Service {
 				
 				if (exitPrefValue) {
 					UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-	
-					Log.i("+++++++++++++", device.getDeviceId() + " ++++++++++++ " + SteeringWheelInterfaceService.this.mCarInterfaceID + "");
-					
-					//verify this notice is actually the specific device we opened, don't close another app's FTDI device
-					if (device != null && device.getDeviceId() == SteeringWheelInterfaceService.this.mCarInterfaceID) {
-						Intent exitIntent = new Intent(getBaseContext(), SteeringWheelInterfaceActivity.class);
-						exitIntent.setAction(Intent.ACTION_DELETE);
-						exitIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-						startActivity(exitIntent);
-						
-						Toast.makeText(getApplicationContext(), getString(R.string.msg_device_disconnected), Toast.LENGTH_SHORT).show();
+
+					//verify this intent is regarding the specific device we opened, don't close another app's serial device
+					if (device != null && SteeringWheelInterfaceService.this.mCarInterface != null) {
+						if (device.getDeviceId() == SteeringWheelInterfaceService.this.mCarInterface.getDeviceID()) {
+							Intent exitIntent = new Intent(getBaseContext(), SteeringWheelInterfaceActivity.class);
+							exitIntent.setAction(Intent.ACTION_DELETE);
+							exitIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+							startActivity(exitIntent);
+							
+							Toast.makeText(getApplicationContext(), getString(R.string.msg_device_disconnected), Toast.LENGTH_SHORT).show();
+						}
 					}
 				} else {
 					carInterfaceStop();
@@ -116,7 +117,26 @@ public class SteeringWheelInterfaceService extends Service {
 		mNoticeManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 		mNoticeManager.notify(mNoticeID, mNoticeBuilder.build());
 		
-		mCarInterface = new ElmInterface(getApplicationContext());		
+		mCarInterface = new ElmInterface(getApplicationContext());
+		mCarInterface.deviceOpenEvent_AddListener(mDeviceOpenListener);
+		
+		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+    	
+		String baudDefault = getString(R.string.scantool_baud);
+		int baudValue = Integer.parseInt(settings.getString("scantool_baud", baudDefault));
+		mCarInterface.setBaudRate(baudValue);
+
+    	String deviceNumDefault = getString(R.string.scantool_device_number);
+		int deviceNumValue = Integer.parseInt(settings.getString("scantool_device_number", deviceNumDefault));
+		mCarInterface.setDeviceNumber(deviceNumValue);
+
+		String protocolCommandDefault = getString(R.string.scantool_protocol);
+		String protocolCommandValue = settings.getString("scantool_protocol", protocolCommandDefault);
+		mCarInterface.setProtocolCommand(protocolCommandValue);
+		
+		String monitorCommandDefault = getString(R.string.scantool_monitor_command);
+		String monitorCommandValue = settings.getString("scantool_monitor_command", monitorCommandDefault);
+		mCarInterface.setMonitorCommand(monitorCommandValue);
 	}
 
 	
@@ -130,31 +150,34 @@ public class SteeringWheelInterfaceService extends Service {
 				
 		return START_STICKY;
 	}
+
 	
-
-	/**
-	 * monitors the interface, restarts it when needed, and reports status as notifications
-	 */
-	protected void carInterfaceRestartIfNeeded() {
-		try {
-			if (mCarInterface.getsStatus() == ElmInterface.STATUS_OPEN_STOPPED) {
-				mCarInterface.monitorStart();
-			} else if (mCarInterface.getsStatus() != ElmInterface.STATUS_OPEN_MONITORING) {
-				mCarInterfaceID = mCarInterface.deviceOpen();
-				if (mCarInterface.getsStatus() == ElmInterface.STATUS_OPEN_STOPPED) {
-					mCarInterface.monitorStart();
-				} //else didn't finish opening, but should be good by next time around, so do nothing special now
-			}
-		} catch (Exception ex) {
-			Log.e(TAG, "ERROR STARTING CAR INTERFACE", ex);
-		}
-
-		if (mCarInterface.getsStatus() == ElmInterface.STATUS_OPEN_MONITORING) {
+	protected void updateNotification() {
+		if (mCarInterface != null && mCarInterface.getsStatus() == ElmInterface.STATUS_OPEN_MONITORING) {
 			mNoticeBuilder.setContentText(getString(R.string.msg_monitoring));
 		} else {
 			mNoticeBuilder.setContentText(getString(R.string.msg_monitoring_stopped));
 		}
 		mNoticeManager.notify(mNoticeID, mNoticeBuilder.build());
+	}
+	
+
+	/**
+	 * Monitors the interface and re-starts monitoring or re-opens interface as needed.
+	 */
+	protected void carInterfaceRestartIfNeeded() {
+		if (mCarInterface.getsStatus() == ElmInterface.STATUS_OPEN_STOPPED) {
+			try {
+				mCarInterface.monitorStart();
+			} catch (Exception ex) {
+				Log.e(TAG, "ERROR STARTING CAR INTERFACE MONITORING", ex);
+			}
+		} else {
+			mCarInterface.deviceOpen();
+			//code flow continues when mDeviceOpenListener.onDeviceOpenEvent() is fired
+		}
+		
+		updateNotification();
 	}
 	
 	
@@ -165,8 +188,7 @@ public class SteeringWheelInterfaceService extends Service {
 			Log.e(TAG, "ERROR STOPPING CAR INTERFACE", ex);
 		}
 		
-		mNoticeBuilder.setContentText(getString(R.string.msg_monitoring_stopped));
-		mNoticeManager.notify(mNoticeID, mNoticeBuilder.build());
+		updateNotification();
 	}
 
 
@@ -186,5 +208,21 @@ public class SteeringWheelInterfaceService extends Service {
 	protected void watchdog_TimerReStart() {
 		watchdog_TimerStop();
 		watchdog_Timer.postDelayed(watchdog_TimerRun, WATCHDOG_INTERVAL);
+	}	
+	
+	
+	protected class ElmInterfaceOpenedListener implements DeviceOpenEventListener {
+		@Override
+		public void onDeviceOpenEvent(DeviceOpenEvent event) {			
+			if (mCarInterface.getsStatus() == ElmInterface.STATUS_OPEN_STOPPED) {
+				try {
+					mCarInterface.monitorStart();
+				} catch (Exception ex) {
+					Log.e(TAG, "ERROR STARTING CAR INTERFACE MONITORING", ex);
+				}
+			} //else didn't finish opening, but should be good by next time around on the watchdog, so do nothing special now
+			
+			updateNotification();
+		}		
 	}
 }
