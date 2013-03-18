@@ -6,7 +6,7 @@ Android application for interfacing with the steering wheel radio control button
 
 This project exists primarily as an example of how to interface an Android device with a vehicle bus using an inexpensive ELM327 based OBDII scan tool.
 
-This is NOT an OBDII or "code reader" type application! A scan tool is used only to provide the interface to other vehicle buses that happen to also use OBDII standard protocols (SAE J1850 PWM, SAE J1850 VPW, ISO 9141-2, ISO 14230-4 KWP2000, ISO 15765-4 CAN-BUS).
+This is NOT an OBDII or "code reader" type application! A scan tool is used only to provide the interface to other vehicle buses that happen to also use OBDII standard protocols (SAE J1850 PWM, SAE J1850 VPW, ISO 9141-2, ISO 14230-4 KWP, ISO 15765-4 CAN, SAE J1939 CAN).
 
 The application is not likely useful to many people exactly as-is, but is designed to be extended to work with your specific vehicle/scenario. Note that only USB scan tools are currently supported, though adding support for BlueTooth  should be relatively simple.
 
