@@ -40,6 +40,9 @@ public class SteeringWheelInterfaceSettings extends PreferenceFragment {
 		//for textbox type prefs
 		bindTxtPrefSummaryToValue(findPreference("scantool_baud"));
 		bindTxtPrefSummaryToValue(findPreference("scantool_device_number"));
+		bindTxtPrefSummaryToValue(findPreference("scantool_monitor_command"));
+		
+		//TODO: create bindListPrefSummaryToValue() type functionality for the "scantool_protocol" pref
 	}
 	
 	

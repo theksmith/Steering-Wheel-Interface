@@ -42,6 +42,9 @@ public class ElmInterface {
 	protected static final int DEFAULT_COMMAND_SEND_TIMEOUT = 250;
 	protected static final int DEFAULT_COMMAND_DATA_TIMEOUT = 1000;
 	protected static final int DEFAULT_COMMAND_RETRIES = 3;
+	
+	protected static final int DEFAULT_RESET_COMMAND_TOTAL_TIMEOUT = 5000;
+	protected static final int DEFAULT_MONITOR_COMMAND_DATA_TIMEOUT = 5000;
 
 	protected Context mAppContext;
 	
@@ -63,8 +66,10 @@ public class ElmInterface {
 	protected int mCommandRetries = 0;
 	protected int mCommandRetryCounter = 0;
 	
+	protected int mSettingDeviceNumber = 1;
 	protected int mSettingBaud = 115200;
-	protected int mSettingDeviceNumber = 0;	
+	protected String mSettingProtocolCommand = "ATSP2";	//setting for our original project use in a 2003 Jeep/Chrysler/Dodge
+	protected String mSettingMonitorCommand = "ATMR11";	//setting for our original project use in a 2003 Jeep/Chrysler/Dodge
 	protected int mStatus = 0;
 	protected int mDeviceID = 0;
 
@@ -94,17 +99,27 @@ public class ElmInterface {
 		mAppContext = appContext.getApplicationContext();
 		mButtons = new ButtonActions(mAppContext);
 	}
-
-	
-	public void setBaudRate(int rate) {
-		mSettingBaud = rate;
-	}
 	
 	
 	public void setDeviceNumber(int number) {
 		mSettingDeviceNumber = number;
 	}
 	
+
+	public void setBaudRate(int rate) {
+		mSettingBaud = rate;
+	}
+	
+	
+	public void setProtocolCommand(String command) {
+		mSettingProtocolCommand = command;
+	}
+	
+	
+	public void setMonitorCommand(String command) {
+		mSettingMonitorCommand = command;
+	}
+
 	
 	public int getsStatus() {
 		return mStatus;
@@ -144,7 +159,7 @@ public class ElmInterface {
 	
 	/**
 	 * Finds and opens the serial device.
-	 * Optionally call setBaudRate() and setDeviceNumber() prior to this.
+	 * Optionally call setDeviceNumber() and setBaudRate() prior.
 	 * 
 	 * @param timeout		Milliseconds to wait for user response to Android permission dialog.
 	 */
@@ -163,7 +178,7 @@ public class ElmInterface {
 		 * this allows leaving the first device alone for some other apps which
 		 * are not multi-device aware and will grab the first one even if it's open 
 		 */
-		int deviceCounter = 0;
+		int deviceCounter = 1;
 		UsbDevice device = null;
 		
 		HashMap<String, UsbDevice> deviceList = mUsbManager.getDeviceList();				
@@ -332,12 +347,12 @@ public class ElmInterface {
     	} else if (mCommand == "ATH1") {
     		if (!mResponse.contains(mCommand) || !mResponse.contains(">") || !mResponse.contains("OK")) return;    		
     		Log.d(TAG, "HEADERS ON");
-    		sendCommand("ATSP2");
-    	} else if (mCommand == "ATSP2") {
+    		sendCommand(mSettingProtocolCommand);
+    	} else if (mCommand == mSettingProtocolCommand) {
     		if (!mResponse.contains(mCommand) || !mResponse.contains(">") || !mResponse.contains("OK")) return;    		
     		Log.d(TAG, "PROTOCOL SET");
-    		sendCommand("ATMR11", 0, 5000, 3);    	
-    	} else if (mCommand == "ATMR11") {
+    		sendCommand(mSettingMonitorCommand, 0, DEFAULT_MONITOR_COMMAND_DATA_TIMEOUT, DEFAULT_COMMAND_RETRIES);    	
+    	} else if (mCommand == mSettingMonitorCommand) {
     		if (!mResponse.contains("\r") && !mResponse.contains("\n")) return;
     		mButtons.performAction(mResponse.trim());
     		mResponse = "";
@@ -350,6 +365,7 @@ public class ElmInterface {
     /**
      * Begins monitoring the serial device.
      * Must call deviceOpen() prior.
+     * Optionally call setProtocolCommand() prior.
      * 
      * @throws Exception
      */
@@ -405,7 +421,7 @@ public class ElmInterface {
 	protected void monitorStartWarm() {
 		if (mStartWarmAttempts < MONITOR_START_WARM_ATTEMPTS) {
 			Log.d(TAG, "MONITORING WARM START ATTEMPT: " + mStartWarmAttempts);
-	        sendCommand("ATI", 2500, 0, 1);
+	        sendCommand("ATI", DEFAULT_RESET_COMMAND_TOTAL_TIMEOUT, 0, 1);
 		} else {
 			Log.d(TAG, "MONITORING WARM START - TOO MANY ATTEMPTS");
 			monitorStartCold();
@@ -418,7 +434,7 @@ public class ElmInterface {
 	protected void monitorStartCold() {
 		if (mStartColdAttempts < MONITOR_START_COLD_ATTEMPTS) {
 			Log.d(TAG, "MONITORING COLD START ATTEMPT: " + mStartColdAttempts);
-			sendCommand("ATZ", 5000, 0, 1);
+			sendCommand("ATZ", DEFAULT_RESET_COMMAND_TOTAL_TIMEOUT, 0, 1);
 		} else {
 			Log.d(TAG, "MONITORING COLD START - TOO MANY ATTEMPTS");
 			try {

@@ -129,6 +129,14 @@ public class SteeringWheelInterfaceService extends Service {
     	String deviceNumDefault = getString(R.string.scantool_device_number);
 		int deviceNumValue = Integer.parseInt(settings.getString("scantool_device_number", deviceNumDefault));
 		mCarInterface.setDeviceNumber(deviceNumValue);
+
+		String protocolCommandDefault = getString(R.string.scantool_protocol);
+		String protocolCommandValue = settings.getString("scantool_protocol", protocolCommandDefault);
+		mCarInterface.setProtocolCommand(protocolCommandValue);
+		
+		String monitorCommandDefault = getString(R.string.scantool_monitor_command);
+		String monitorCommandValue = settings.getString("scantool_monitor_command", monitorCommandDefault);
+		mCarInterface.setMonitorCommand(monitorCommandValue);
 	}
 
 	
