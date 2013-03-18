@@ -1,4 +1,4 @@
-# Version 1.1 (in development)
+# Version 1.1 (3/17/2013)
 
 +	Miscellaneous minor improvements, bug fixes, and project cleanup
 +	New Feature: Allows launching app before connecting scan tool (will request USB device permissions correctly)
