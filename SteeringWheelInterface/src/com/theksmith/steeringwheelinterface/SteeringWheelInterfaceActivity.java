@@ -3,6 +3,8 @@ package com.theksmith.steeringwheelinterface;
 import android.R.style;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
 
@@ -19,7 +21,12 @@ public class SteeringWheelInterfaceActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+		
+		try {
+			PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+			setTitle(getTitle() + " " + info.versionName);
+		} catch (NameNotFoundException e) { }
+		
 		String action = getIntent().getAction(); 
 		
 		if (action == Intent.ACTION_EDIT) {
