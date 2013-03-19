@@ -8,7 +8,7 @@
     <string name="scantool_detach_disconnect">true</string>
     <string name="scantool_device_number">1</string>
     <string name="scantool_device_number_title">Scantool Device Number</string>
-    <string name="scantool_baud">38400</string>
+    <string name="scantool_baud">115200</string>
     <string name="scantool_baud_title">Scantool Baud Rate</string>
     <string name="scantool_protocol">ATSP2</string>
     <string name="scantool_protocol_title">Scantool Protocol</string>
