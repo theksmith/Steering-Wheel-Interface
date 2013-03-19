@@ -166,13 +166,15 @@ public class SteeringWheelInterfaceService extends Service {
 	 * Monitors the interface and re-starts monitoring or re-opens interface as needed.
 	 */
 	protected void carInterfaceRestartIfNeeded() {
-		if (mCarInterface.getsStatus() == ElmInterface.STATUS_OPEN_STOPPED) {
+		int status = mCarInterface.getsStatus();
+		
+		if (status == ElmInterface.STATUS_OPEN_STOPPED) {
 			try {
 				mCarInterface.monitorStart();
 			} catch (Exception ex) {
 				Log.e(TAG, "ERROR STARTING CAR INTERFACE MONITORING", ex);
 			}
-		} else {
+		} else if (status != ElmInterface.STATUS_OPEN_MONITORING) {
 			mCarInterface.deviceOpen();
 			//code flow continues when mDeviceOpenListener.onDeviceOpenEvent() is fired
 		}
