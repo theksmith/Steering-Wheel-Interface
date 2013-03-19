@@ -3,7 +3,10 @@ package com.theksmith.steeringwheelinterface;
 import com.theksmith.steeringwheelinterface.R;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.preference.EditTextPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
@@ -37,12 +40,11 @@ public class SteeringWheelInterfaceSettings extends PreferenceFragment {
 		Preference exit = findPreference("action_exit");
 		exit.setOnPreferenceClickListener(mExitOnClickListener);			
 		
-		//for textbox type prefs
-		bindTxtPrefSummaryToValue(findPreference("scantool_baud"));
-		bindTxtPrefSummaryToValue(findPreference("scantool_device_number"));
-		bindTxtPrefSummaryToValue(findPreference("scantool_monitor_command"));
-		
-		//TODO: create bindListPrefSummaryToValue() type functionality for the "scantool_protocol" pref
+		//for preference types with string values
+		bindStringPreferenceSummaryToValue(findPreference("scantool_baud"));
+		bindStringPreferenceSummaryToValue(findPreference("scantool_device_number"));
+		bindStringPreferenceSummaryToValue(findPreference("scantool_monitor_command"));
+		bindStringPreferenceSummaryToValue(findPreference("scantool_protocol"));
 	}
 	
 	
@@ -55,20 +57,27 @@ public class SteeringWheelInterfaceSettings extends PreferenceFragment {
 	};
 	
 	
-	protected void bindTxtPrefSummaryToValue(Preference preference) {
-		preference.setOnPreferenceChangeListener(mTxtPrefChangeListener);
+	protected void bindStringPreferenceSummaryToValue(Preference preference) {
+		preference.setOnPreferenceChangeListener(mStringPreferenceChangeListener);
 
-		mTxtPrefChangeListener.onPreferenceChange(
+		mStringPreferenceChangeListener.onPreferenceChange(
 				preference,
 				PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getString(preference.getKey(), ""));
 	}
 
 	
-	protected OnPreferenceChangeListener mTxtPrefChangeListener = new Preference.OnPreferenceChangeListener() {
+	protected OnPreferenceChangeListener mStringPreferenceChangeListener = new Preference.OnPreferenceChangeListener() {
 		@Override
 		public boolean onPreferenceChange(Preference preference, Object value) {
 			String stringValue = value.toString();
+			
+			if (preference instanceof ListPreference) {
+				ListPreference list = (ListPreference)preference;
+				stringValue = (String)list.getEntries()[list.findIndexOfValue(stringValue)];
+			}
+			
 			preference.setSummary(stringValue);
+			
 			return true;
 		}
 	};
