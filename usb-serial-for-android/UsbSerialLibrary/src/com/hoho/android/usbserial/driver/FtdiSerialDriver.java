@@ -214,8 +214,8 @@ public class FtdiSerialDriver extends UsbSerialDriver {
             }
             reset();
             
-            /* Kristoffer Smith <stuff@theksmith.com>
-             * changed to use default for each parameter ONLY when not set by user 
+            /* Kristoffer Smith 
+             * changed to use default for each parameter ONLY when not already set by user 
              */
             if (mBaudRate <= 0) mBaudRate = DEFAULT_BAUD_RATE;
             if (mDataBits <= 0) mDataBits = DEFAULT_DATA_BITS;

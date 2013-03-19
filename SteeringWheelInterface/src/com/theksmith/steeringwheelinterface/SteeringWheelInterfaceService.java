@@ -27,7 +27,7 @@ import android.widget.Toast;
  * Foreground service that keeps running even when main activity is destroyed.
  * Manages the vehicle interface and provides status notifications.
  * 
- * @author Kristoffer Smith <stuff@theksmith.com>
+ * @author Kristoffer Smith <ksmith@theksmith.com>
  */
 public class SteeringWheelInterfaceService extends Service {
 	protected static final String TAG = SteeringWheelInterfaceService.class.getSimpleName();	
@@ -125,11 +125,11 @@ public class SteeringWheelInterfaceService extends Service {
 		String baudDefault = getString(R.string.scantool_baud);
 		int baudValue = Integer.parseInt(settings.getString("scantool_baud", baudDefault));
 		mCarInterface.setBaudRate(baudValue);
-
-    	String deviceNumDefault = getString(R.string.scantool_device_number);
+		
+		String deviceNumDefault = getString(R.string.scantool_device_number);
 		int deviceNumValue = Integer.parseInt(settings.getString("scantool_device_number", deviceNumDefault));
 		mCarInterface.setDeviceNumber(deviceNumValue);
-
+		
 		String protocolCommandDefault = getString(R.string.scantool_protocol);
 		String protocolCommandValue = settings.getString("scantool_protocol", protocolCommandDefault);
 		mCarInterface.setProtocolCommand(protocolCommandValue);

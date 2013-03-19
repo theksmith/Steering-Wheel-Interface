@@ -129,8 +129,8 @@ public enum UsbSerialProber {
      */
     public static boolean testIfSupported(final UsbDevice usbDevice,
             final Map<Integer, int[]> supportedDevices) {        
-        /* Kristoffer Smith <stuff@theksmith.com>
-         * changed to public to support acquiring a specific device
+        /* Kristoffer Smith
+         * changed method to public to support acquiring a specific device from consuming code
          */
         
         final int[] supportedProducts = supportedDevices.get(

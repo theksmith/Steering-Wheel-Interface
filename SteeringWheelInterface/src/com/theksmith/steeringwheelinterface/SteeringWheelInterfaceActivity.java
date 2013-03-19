@@ -13,7 +13,7 @@ import android.preference.PreferenceFragment;
  * Opens the settings screen if called with Intent.ACTION_EDIT. 
  * Kills the background service and exits the app if called with Intent.ACTION_DELETE.
  * 
- * @author Kristoffer Smith <stuff@theksmith.com>
+ * @author Kristoffer Smith <ksmith@theksmith.com>
  */
 public class SteeringWheelInterfaceActivity extends Activity {
 	@Override

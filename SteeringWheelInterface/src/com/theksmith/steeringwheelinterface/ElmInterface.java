@@ -27,9 +27,8 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager;
 /**
  * Wraps the serial device with methods to handle specific ELM based device communications.
  * 
- * @author Kristoffer Smith <stuff@theksmith.com>
+ * @author Kristoffer Smith <ksmith@theksmith.com>
  */
-
 public class ElmInterface {
 	protected static final String TAG = ElmInterface.class.getSimpleName();
 	
