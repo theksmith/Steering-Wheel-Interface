@@ -3,9 +3,7 @@ package com.theksmith.steeringwheelinterface;
 import com.theksmith.steeringwheelinterface.R;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
-import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;

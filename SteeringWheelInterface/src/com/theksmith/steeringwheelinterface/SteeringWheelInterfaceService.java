@@ -55,19 +55,12 @@ public class SteeringWheelInterfaceService extends Service {
 				Boolean exitPrefValue = settings.getBoolean("scantool_detach_disconnect", exitPrefDefault);
 				
 				if (exitPrefValue) {
-					UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-
-					//verify this intent is regarding the specific device we opened, don't close another app's serial device
-					if (device != null && SteeringWheelInterfaceService.this.mCarInterface != null) {
-						if (device.getDeviceId() == SteeringWheelInterfaceService.this.mCarInterface.getDeviceID()) {
-							Intent exitIntent = new Intent(getBaseContext(), SteeringWheelInterfaceActivity.class);
-							exitIntent.setAction(Intent.ACTION_DELETE);
-							exitIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-							startActivity(exitIntent);
-							
-							Toast.makeText(getApplicationContext(), getString(R.string.msg_device_disconnected), Toast.LENGTH_SHORT).show();
-						}
-					}
+					Intent exitIntent = new Intent(getBaseContext(), SteeringWheelInterfaceActivity.class);
+					exitIntent.setAction(Intent.ACTION_DELETE);
+					exitIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+					startActivity(exitIntent);
+					
+					Toast.makeText(getApplicationContext(), getString(R.string.msg_device_disconnected), Toast.LENGTH_SHORT).show();
 				} else {
 					carInterfaceStop();
 				}
