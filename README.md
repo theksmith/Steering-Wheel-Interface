@@ -4,17 +4,19 @@ Android application for interfacing with the steering wheel radio control button
 
 ## Purpose
 
-This project exists primarily as an example of how to interface an Android device with a vehicle bus using an inexpensive ELM327 based OBDII scan tool.
+This project exists primarily as an example of how to interface an Android device with a vehicle bus using an inexpensive ELM327 based OBDII scantool.
 
-This is NOT an OBDII or "code reader" type application! A scan tool is used only to provide the interface to other vehicle buses that happen to also use OBDII standard protocols (SAE J1850 PWM, SAE J1850 VPW, ISO 9141-2, ISO 14230-4 KWP, ISO 15765-4 CAN, SAE J1939 CAN).
+This is NOT an OBDII or "code reader" type application! A scantool is used only to provide the interface to other vehicle buses that happen to also use OBDII standard protocols (SAE J1850 PWM, SAE J1850 VPW, ISO 9141-2, ISO 14230-4 KWP, ISO 15765-4 CAN, SAE J1939 CAN).
 
-The application is not likely useful to many people exactly as-is, but is designed to be extended to work with your specific vehicle/scenario. Note that only USB scan tools are currently supported, though adding BlueTooth should be relatively simple.
+The application is not likely useful to many people exactly as-is, but is designed to be extended to work with your specific vehicle/scenario. Note that only USB scantools are currently supported, though adding BlueTooth should be relatively simple.
 
 ## Getting Started
 
 DISCLAIMER: EVERYTHING INCLUDED IN THIS REPOSITORY IS FOR INFORMATION PURPOSES ONLY. I AM NOT RESPONSIBLE FOR ANY DAMAGE TO YOU, YOUR VEHICLE, AND/OR DEVICES. DO NOT ATTEMPT ANY OF THE FOLLOWING UNLESS YOU KNOW WHAT YOU ARE DOING.
 
-### To test the application as-is requires:
+### To test the application as-is:
+
+Requirements:
 
 +	An Android device with USB Host support running Android 4.1 (Jelly Bean) or newer.
 	
@@ -22,23 +24,23 @@ DISCLAIMER: EVERYTHING INCLUDED IN THIS REPOSITORY IS FOR INFORMATION PURPOSES O
 	
 	Root access is required for some functionality.
 
-+	An ELM327 based USB scan tool
++	An ELM327 based USB scantool
 	
-	NOTE: Many of the cheap eBay clones do not implement every protocol correctly and therefore may not work. This one is known to work: [http://www.amazon.com/ScanTool-423001-ElmScan-Diagnostic-Software/dp/B002PYBZJO/](http://www.amazon.com/ScanTool-423001-ElmScan-Diagnostic-Software/dp/B002PYBZJO/)
+	NOTE: Many of the cheap eBay clones do not implement every protocol correctly and therefore may not work. [This one](http://www.amazon.com/ScanTool-423001-ElmScan-Diagnostic-Software/dp/B002PYBZJO/) is known to work.
 
 +	A USB OTG cable	(or an Android device with a native USB Host port)
 
 +	A Jeep/Chrysler/Dodge vehicle with a SAE J1850 VPW base PCI Bus (many late 90's through mid 2000's models)
 
-Compile and deploy the application. Plug the scan tool into the vehicle via the OBDII diagnostic port and into the Android device through the USB OTG cable. 
+Compile and deploy the application. Plug the scantool into the vehicle via the OBDII diagnostic port and into the Android device through the USB OTG cable. 
 
 Respond to the Android prompt regarding a USB device being attached by selecting this app to launch. It is recommended you select the "always" option. NOTE: If you already have a default application for USB-Serial devices, you will need to clear that setting to ever see this prompt.
 
-A notification should be seen saying the Steering Wheel Interface started. Click the notification for the settings screen where you can adjust the baud rate for your particular scan tool. IMPORTANT: You will need to restart the app for the new baud rate (and some other settings) to take effect!
+A notification should be seen saying the Steering Wheel Interface started. Click the notification for the settings screen where you can adjust the baud rate for your particular scantool. IMPORTANT: You will need to restart the app for the new baud rate (and some other settings) to take effect!
 
 Press your steering wheel radio control buttons. By default, play/pause, next/prev track, volume up/down, and go-to-home-screen actions are supported. IMPORTANT: Only the volume actions do not require root, the other actions will fail silently on non-rooted devices!
 
-Tested and confirmed working on a Motorola XOOM 4G running the CyanogenMod 10 ROM (Android 4.1) with a 2003 Jeep Grand Cherokee. UPDATE: Now confirmed to work in Android 4.2 as well (via CyanogenMod 10.1).
+Tested and confirmed working on a Motorola XOOM 4G running the CyanogenMod 10 ROM (Android 4.1) with a 2003 Jeep Grand Cherokee. UPDATE: Confirmed working in CM 10.1 (Android 4.2) as well.
 
 ### Using with other vehicle years/makes/models:
 
@@ -56,7 +58,7 @@ If all messages that you wish to monitor for are sent from or to a particular de
 
 ## Copyright and License
 
-Copyright 2013 Kristoffer Smith and other contributors
+Copyright 2013 Kristoffer Smith and other contributors.
 
 Except for external references, this project is licensed under the MIT License.
 
