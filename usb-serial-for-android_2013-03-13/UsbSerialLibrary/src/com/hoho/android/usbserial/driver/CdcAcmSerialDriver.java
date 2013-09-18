@@ -19,7 +19,7 @@ import java.util.Map;
  *      href="http://www.usb.org/developers/devclass_docs/usbcdc11.pdf">Universal
  *      Serial Bus Class Definitions for Communication Devices, v1.1</a>
  */
-public class CdcAcmSerialDriver extends UsbSerialDriver {
+public class CdcAcmSerialDriver extends CommonUsbSerialDriver {
 
     private final String TAG = CdcAcmSerialDriver.class.getSimpleName();
 
@@ -29,11 +29,6 @@ public class CdcAcmSerialDriver extends UsbSerialDriver {
     private UsbEndpoint mControlEndpoint;
     private UsbEndpoint mReadEndpoint;
     private UsbEndpoint mWriteEndpoint;
-
-    private int mBaudRate;
-    private int mDataBits;
-    private int mStopBits;
-    private int mParity;
 
     private boolean mRts = false;
     private boolean mDtr = false;
@@ -77,13 +72,6 @@ public class CdcAcmSerialDriver extends UsbSerialDriver {
         Log.d(TAG, "Read endpoint direction: " + mReadEndpoint.getDirection());
         mWriteEndpoint = mDataInterface.getEndpoint(0);
         Log.d(TAG, "Write endpoint direction: " + mWriteEndpoint.getDirection());
-
-        Log.d(TAG, "Setting line coding to 115200/8N1");
-        mBaudRate = 115200;
-        mDataBits = DATABITS_8;
-        mParity = PARITY_NONE;
-        mStopBits = STOPBITS_1;
-        setParameters(mBaudRate, mDataBits, mStopBits, mParity);
     }
 
     private int sendAcmControlMessage(int request, int value, byte[] buf) {
@@ -150,21 +138,13 @@ public class CdcAcmSerialDriver extends UsbSerialDriver {
         return offset;
     }
 
-    @Deprecated
-    @Override
-    public int setBaudRate(int baudRate) throws IOException {
-        mBaudRate = baudRate;
-        setParameters(mBaudRate, mDataBits, mStopBits, mParity);
-        return mBaudRate;
-    }
-
     @Override
     public void setParameters(int baudRate, int dataBits, int stopBits, int parity) {
         byte stopBitsByte;
         switch (stopBits) {
-            case STOPBITS_1: stopBitsByte = 1; break;
-            case STOPBITS_1_5: stopBitsByte = 2; break;
-            case STOPBITS_2: stopBitsByte = 3; break;
+            case STOPBITS_1: stopBitsByte = 0; break;
+            case STOPBITS_1_5: stopBitsByte = 1; break;
+            case STOPBITS_2: stopBitsByte = 2; break;
             default: throw new IllegalArgumentException("Bad value for stopBits: " + stopBits);
         }
 
@@ -257,6 +237,10 @@ public class CdcAcmSerialDriver extends UsbSerialDriver {
         supportedDevices.put(Integer.valueOf(UsbId.VENDOR_ATMEL),
                 new int[] {
                     UsbId.ATMEL_LUFA_CDC_DEMO_APP,
+                });
+        supportedDevices.put(Integer.valueOf(UsbId.VENDOR_LEAFLABS),
+                new int[] {
+                    UsbId.LEAFLABS_MAPLE,
                 });
         return supportedDevices;
     }

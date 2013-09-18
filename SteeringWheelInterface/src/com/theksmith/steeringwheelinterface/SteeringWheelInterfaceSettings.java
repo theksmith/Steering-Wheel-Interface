@@ -15,7 +15,7 @@ import android.preference.PreferenceManager;
 /**
  * A simple settings screen (the app's only UI).
  * 
- * @author Kristoffer Smith <ksmith@theksmith.com>
+ * @author Kristoffer Smith <kristoffer@theksmith.com>
  */
 public class SteeringWheelInterfaceSettings extends PreferenceFragment {
 	protected Activity mParentActivity;

@@ -179,7 +179,7 @@ public class SerialInputOutputManager implements Runnable {
             }
         }
         if (outBuff != null) {
-            if (DEBUG) {               
+            if (DEBUG) {
                 Log.d(TAG, "Writing data len=" + len);
             }
             mDriver.write(outBuff, READ_WAIT_MILLIS);

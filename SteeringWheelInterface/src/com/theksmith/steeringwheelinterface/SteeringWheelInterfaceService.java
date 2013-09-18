@@ -14,7 +14,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Handler;
 import android.os.IBinder;
@@ -27,7 +26,7 @@ import android.widget.Toast;
  * Foreground service that keeps running even when main activity is destroyed.
  * Manages the vehicle interface and provides status notifications.
  * 
- * @author Kristoffer Smith <ksmith@theksmith.com>
+ * @author Kristoffer Smith <kristoffer@theksmith.com>
  */
 public class SteeringWheelInterfaceService extends Service {
 	protected static final String TAG = SteeringWheelInterfaceService.class.getSimpleName();	

@@ -27,7 +27,7 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager;
 /**
  * Wraps the serial device with methods to handle specific ELM based device communications.
  * 
- * @author Kristoffer Smith <ksmith@theksmith.com>
+ * @author Kristoffer Smith <kristoffer@theksmith.com>
  */
 public class ElmInterface {
 	protected static final String TAG = ElmInterface.class.getSimpleName();
@@ -123,11 +123,6 @@ public class ElmInterface {
 	public int getsStatus() {
 		return mStatus;
 	}
-	
-	
-	public int getDeviceID() {
-		return mDeviceID;
-	}
     
 	
 	/**
@@ -182,21 +177,42 @@ public class ElmInterface {
 		
 		HashMap<String, UsbDevice> deviceList = mUsbManager.getDeviceList();				
 		Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
+
+		List<UsbSerialDriver> deviceDrivers;
+		Iterator<UsbSerialDriver> deviceDriverIterator;
+		UsbSerialDriver deviceDriver;
 		
+		//iterate all usb devices
 		while(deviceIterator.hasNext() && deviceCounter <= mSettingDeviceNumber) {
 			device = deviceIterator.next();
-
-			if (device != null && UsbSerialProber.testIfSupported(device, FtdiSerialDriver.getSupportedDevices())) {
-				if (deviceCounter == mSettingDeviceNumber) {					
+			
+			if (device != null) {				
+				//probe the device to determine if it has an usb-serial-for-android supported drivers/interfaces
+				deviceDrivers = UsbSerialProber.probeSingleDevice(mUsbManager, device);
+				deviceDriverIterator = deviceDrivers.iterator();
+				
+				while(deviceDriverIterator.hasNext()){					
+					deviceDriver = deviceDriverIterator.next();
+					
+					//see if this driver/interface is an FTDI serial interface
+					if (deviceDriver instanceof FtdiSerialDriver) {
+						if (deviceCounter == mSettingDeviceNumber) {					
+							break;
+						} else {
+							deviceCounter++;
+						}
+					}
+				}
+				
+				if (deviceCounter == mSettingDeviceNumber) {
 					break;
-				} else {				
-					deviceCounter++;
 				}
 			}
 			
-			device = null;			
+			deviceDriver = null;
+			device = null;
 		}
-
+		
 		if (device == null) {
 			Log.w(TAG, "COULD NOT FIND SERIAL DEVICE NUMBER: " + mSettingDeviceNumber);	        
 		} else {
@@ -212,18 +228,17 @@ public class ElmInterface {
 	
 	
 	public void openDeviceFinish(UsbDevice device) {
-		try {		    		
+		try {
     		mSerialDevice = UsbSerialProber.acquire(mUsbManager, device);
     		
     		if (mSerialDevice != null) {
-	        	Log.i(TAG, "SERIAL DEVICE FOUND: " + mSerialDevice);            	
-	        					
-	        	mSerialDevice.setParameters(mSettingBaud, UsbSerialDriver.DATABITS_8, UsbSerialDriver.STOPBITS_1, UsbSerialDriver.PARITY_NONE);
+	        	Log.i(TAG, "SERIAL DEVICE FOUND: " + mSerialDevice);
+	        	
 	        	mSerialDevice.open();
-	        	
+	        	mSerialDevice.setParameters(mSettingBaud, UsbSerialDriver.DATABITS_8, UsbSerialDriver.STOPBITS_1, UsbSerialDriver.PARITY_NONE);
+	        		        	
 	        	ioManagerReset();
-	        	
-	        	mDeviceID = mSerialDevice.getDevice().getDeviceId();
+
 	        	mStatus = STATUS_OPEN_STOPPED;
 	        	
 	        	deviceOpenEvent_Fire();
