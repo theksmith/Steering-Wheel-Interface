@@ -18,9 +18,9 @@ DISCLAIMER: EVERYTHING INCLUDED IN THIS REPOSITORY IS FOR INFORMATION PURPOSES O
 
 Requirements:
 
-+	An Android device with USB Host support running Android 4.1 (Jelly Bean) or newer.
++	An Android device with USB Host support running Android 4.1 or newer.
 	
-	NOTE: The majority of the functionality only requires Android 3.1 (Honeycomb). If you remove or refactor the "settings screen" functionality, you should be able to compile and deploy to Honeycomb devices.
+	NOTE: The majority of the functionality only requires Android 3.1. If you remove or refactor the "settings screen" functionality, you should be able to compile and deploy to Honeycomb devices.
 	
 	Root access is required for some functionality.
 
@@ -28,9 +28,9 @@ Requirements:
 	
 	NOTE: Many of the cheap eBay clones do not implement every protocol correctly and therefore may not work. [This one](http://www.amazon.com/ScanTool-423001-ElmScan-Diagnostic-Software/dp/B002PYBZJO/) is known to work.
 
-+	A USB OTG cable	(or an Android device with a native USB Host port)
++	A USB OTG cable	(or an Android device with native USB Host port)
 
-+	A Jeep/Chrysler/Dodge vehicle with a SAE J1850 VPW base PCI Bus (many late 90's through mid 2000's models)
++	A Jeep/Chrysler/Dodge vehicle with a SAE J1850 VPW base PCI Bus (many late 90's through mid 2000 models)
 
 Compile and deploy the application. Plug the scantool into the vehicle via the OBDII diagnostic port and into the Android device through the USB OTG cable. 
 
@@ -46,15 +46,15 @@ Tested and confirmed working on a Motorola XOOM 4G running the CyanogenMod 10 RO
 
 +	Step 1: Determine how to interface (via USB scantool) with the "comfort bus" or similar in your vehicle. This may involve modifications to the scantool and/or vehicle wiring.
 
-NOTE: Many older vehicles have their buses interconnected, thereby allowing you to simply connect to the OBDII port. Most newer vehicles isolate the Diagnostic Bus (on the OBDII port). For those vehicles you would have to splice into another bus directly. Extra pins on the OBDII port may expose additional buses. Also the radio harness typically exposes the comfort bus. Get a factory service manual with wiring diagrams or Google and hope someone else has hacked on your specific vehicle year/make/model.
+	NOTE: Many older vehicles have their buses interconnected, thereby allowing you to simply connect to the OBDII port. Most newer vehicles isolate the Diagnostic Bus (on the OBDII port). For those vehicles you would have to splice into another bus directly. Extra pins on the OBDII port may expose additional buses. Also the radio harness typically exposes the comfort bus. Get a factory service manual with wiring diagrams or Google and hope someone else has hacked on your specific vehicle year/make/model.
 
-See [this article](http://theksmith.com/technology/hack-vehicle-bus-cheap-easy-part-1/) for more info.
+	See [this article](http://theksmith.com/technology/hack-vehicle-bus-cheap-easy-part-1/) for more info.
 
 +	Step 2: Determine what bus messages are sent when interacting with the factory device you wish to monitor. See [this article](http://theksmith.com/technology/hack-vehicle-bus-cheap-easy-part-2/) for an example how-to.
 
 +	Step 3: Adjust the app as needed based on your findings. In particular, the BUTTON_* declarations in ButtonActions.java, the "Scantool Protocol" in settings, and the "Scantool Monitor Command".
 
-If all messages that you wish to monitor for are sent from or to a particular device id, use ATMT## or ATMR## for the monitor command. See the ELM327 datasheet for more info. You could use ATMA instead to monitor all bus messages, though this could affect performance.
+	If all messages that you wish to monitor for are sent from or to a particular device id, use ATMT## or ATMR## for the monitor command. See the ELM327 datasheet for more info. You could use ATMA instead to monitor all bus messages, though this could affect performance.
 
 ## Copyright and License
 
@@ -82,4 +82,6 @@ Pull requests are welcome! Please contact me if you'd like to do a major re-work
 
 ### References & Dependencies
 
-+	This project uses the usb-serial-for-android library. Source code is included instead of the binary as some of the latest unreleased features were needed. The source has not been modified for this release. [https://github.com/mik3y/usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)
++	This project uses the usb-serial-for-android library. Source code is included instead of the binary as some of the latest unreleased features were needed. The source has not been modified for this release. Note that this library is licensed under LGPL Version 2.1.
+
+	[https://github.com/mik3y/usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)
