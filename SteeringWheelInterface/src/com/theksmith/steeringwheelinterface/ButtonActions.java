@@ -127,8 +127,10 @@ public class ButtonActions {
 	}
 		
 	
+	//TODO: most of these require root, is there a better way? how does Tasker do it?
+	
+
 	protected void btnMediaPause() throws Exception {
-		//TODO: this requires root, is there a better way? how does Tasker do it?
 		Runtime.getRuntime().exec("su -c input keyevent " + KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
     }
     

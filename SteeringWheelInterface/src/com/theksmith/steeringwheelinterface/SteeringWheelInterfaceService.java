@@ -19,7 +19,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.widget.Toast;
+//import android.widget.Toast;
 
 
 /**
@@ -59,7 +59,8 @@ public class SteeringWheelInterfaceService extends Service {
 					exitIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 					startActivity(exitIntent);
 					
-					Toast.makeText(getApplicationContext(), getString(R.string.msg_device_disconnected), Toast.LENGTH_SHORT).show();
+					//TODO: make this and future toast notifications enabled/disabled via a setting
+					//Toast.makeText(getApplicationContext(), getString(R.string.msg_device_disconnected), Toast.LENGTH_SHORT).show();
 				} else {
 					carInterfaceStop();
 				}

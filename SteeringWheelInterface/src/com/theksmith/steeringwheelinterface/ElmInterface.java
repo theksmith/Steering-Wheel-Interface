@@ -222,13 +222,14 @@ public class ElmInterface {
 				//get explicit permissions for device for when app is not launched from a usb connection intent
 				PendingIntent devicePermissionIntent = PendingIntent.getBroadcast(mAppContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
 				mUsbManager.requestPermission(device, devicePermissionIntent);
-			}				
+			}
         }
 	}
 	
 	
 	public void openDeviceFinish(UsbDevice device) {
 		try {
+			//TODO: update code flow to remove need for use of the deprecated acquire() method
     		mSerialDevice = UsbSerialProber.acquire(mUsbManager, device);
     		
     		if (mSerialDevice != null) {
