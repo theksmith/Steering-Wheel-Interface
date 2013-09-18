@@ -358,7 +358,11 @@ public class ElmInterface {
     	} else if (mCommand == "ATL1") {
     		if (!mResponse.contains(mCommand) || !mResponse.contains(">") || !mResponse.contains("OK")) return;
     		Log.d(TAG, "LINE BREAKS ON");
-    		sendCommand("ATH1");   
+    		sendCommand("ATS1");
+    	} else if (mCommand == "ATS1") {
+    		if (!mResponse.contains(mCommand) || !mResponse.contains(">") || !mResponse.contains("OK")) return;
+    		Log.d(TAG, "SPACES ON");
+    		sendCommand("ATH1");
     	} else if (mCommand == "ATH1") {
     		if (!mResponse.contains(mCommand) || !mResponse.contains(">") || !mResponse.contains("OK")) return;    		
     		Log.d(TAG, "HEADERS ON");
