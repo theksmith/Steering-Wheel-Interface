@@ -35,7 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * A {@link UsbSerialDriver} implementation for a variety of FTDI devices
+ * A {@link CommonUsbSerialDriver} implementation for a variety of FTDI devices
  * <p>
  * This driver is based on
  * <a href="http://www.intra2net.com/en/developer/libftdi">libftdi</a>, and is
@@ -87,12 +87,7 @@ import java.util.Map;
  * @see <a href="http://www.ftdichip.com/">FTDI Homepage</a>
  * @see <a href="http://www.intra2net.com/en/developer/libftdi">libftdi</a>
  */
-public class FtdiSerialDriver extends UsbSerialDriver {
-
-    private static final int DEFAULT_BAUD_RATE = 115200;
-    private static final int DEFAULT_DATA_BITS = DATABITS_8;
-    private static final int DEFAULT_PARITY = PARITY_NONE;
-    private static final int DEFAULT_STOP_BITS = STOPBITS_1;
+public class FtdiSerialDriver extends CommonUsbSerialDriver {
 
     public static final int USB_TYPE_STANDARD = 0x00 << 5;
     public static final int USB_TYPE_CLASS = 0x00 << 5;
@@ -164,18 +159,38 @@ public class FtdiSerialDriver extends UsbSerialDriver {
 
     private int mMaxPacketSize = 64; // TODO(mikey): detect
 
-    //KLS: changed initial values so we can detect if these are set by the user or if we should use defaults
-    private int mBaudRate = -1;
-    private int mDataBits = -1;
-    private int mParity = -1;
-    private int mStopBits = -1;
-
     /**
      * Due to http://b.android.com/28023 , we cannot use UsbRequest async reads
      * since it gives no indication of number of bytes read. Set this to
      * {@code true} on platforms where it is fixed.
      */
     private static final boolean ENABLE_ASYNC_READS = false;
+
+    /**
+     * Filter FTDI status bytes from buffer
+     * @param src The source buffer (which contains status bytes)
+     * @param dest The destination buffer to write the status bytes into (can be src)
+     * @param totalBytesRead Number of bytes read to src
+     * @param maxPacketSize The USB endpoint max packet size
+     * @return The number of payload bytes
+     */
+    private final int filterStatusBytes(byte[] src, byte[] dest, int totalBytesRead, int maxPacketSize) {
+        final int packetsCount = totalBytesRead / maxPacketSize + 1;
+        for (int packetIdx = 0; packetIdx < packetsCount; ++packetIdx) {
+            final int count = (packetIdx == (packetsCount - 1))
+                    ? (totalBytesRead % maxPacketSize) - MODEM_STATUS_HEADER_LENGTH
+                    : maxPacketSize - MODEM_STATUS_HEADER_LENGTH;
+            if (count > 0) {
+                System.arraycopy(src,
+                        packetIdx * maxPacketSize + MODEM_STATUS_HEADER_LENGTH,
+                        dest,
+                        packetIdx * (maxPacketSize - MODEM_STATUS_HEADER_LENGTH),
+                        count);
+            }
+        }
+
+      return totalBytesRead - (packetsCount * 2);
+    }
 
     /**
      * Constructor.
@@ -209,20 +224,10 @@ public class FtdiSerialDriver extends UsbSerialDriver {
                 if (mConnection.claimInterface(mDevice.getInterface(i), true)) {
                     Log.d(TAG, "claimInterface " + i + " SUCCESS");
                 } else {
-                    Log.d(TAG, "claimInterface " + i + " FAIL");
+                    throw new IOException("Error claiming interface " + i);
                 }
             }
             reset();
-            
-            /* Kristoffer Smith <stuff@theksmith.com>
-             * changed to use default for each parameter ONLY when not set by user 
-             */
-            if (mBaudRate <= 0) mBaudRate = DEFAULT_BAUD_RATE;
-            if (mDataBits <= 0) mDataBits = DEFAULT_DATA_BITS;
-            if (mStopBits <= 0) mStopBits = DEFAULT_STOP_BITS;
-            if (mParity <= 0) mParity = DEFAULT_PARITY;
-            setParameters(mBaudRate, mDataBits, mStopBits, mParity);
-            
             opened = true;
         } finally {
             if (!opened) {
@@ -274,17 +279,13 @@ public class FtdiSerialDriver extends UsbSerialDriver {
                 final int readAmt = Math.min(dest.length, mReadBuffer.length);
                 totalBytesRead = mConnection.bulkTransfer(endpoint, mReadBuffer,
                         readAmt, timeoutMillis);
-            }
 
-            if (totalBytesRead < MODEM_STATUS_HEADER_LENGTH) {
-                throw new IOException("Expected at least " + MODEM_STATUS_HEADER_LENGTH + " bytes");
+                if (totalBytesRead < MODEM_STATUS_HEADER_LENGTH) {
+                    throw new IOException("Expected at least " + MODEM_STATUS_HEADER_LENGTH + " bytes");
+                }
+  
+                return filterStatusBytes(mReadBuffer, dest, totalBytesRead, endpoint.getMaxPacketSize());
             }
-
-            final int payloadBytesRead = totalBytesRead - MODEM_STATUS_HEADER_LENGTH;
-            if (payloadBytesRead > 0) {
-                System.arraycopy(mReadBuffer, MODEM_STATUS_HEADER_LENGTH, dest, 0, payloadBytesRead);
-            }
-            return payloadBytesRead;
         }
     }
 
@@ -324,9 +325,7 @@ public class FtdiSerialDriver extends UsbSerialDriver {
         return offset;
     }
 
-    @Override
-    @Deprecated
-    public int setBaudRate(int baudRate) throws IOException {
+    private int setBaudRate(int baudRate) throws IOException {
         long[] vals = convertBaudrate(baudRate);
         long actualBaudrate = vals[0];
         long index = vals[1];
@@ -343,7 +342,7 @@ public class FtdiSerialDriver extends UsbSerialDriver {
     @Override
     public void setParameters(int baudRate, int dataBits, int stopBits, int parity)
             throws IOException {
-        mBaudRate = setBaudRate(baudRate);
+        setBaudRate(baudRate);
 
         int config = dataBits;
 
@@ -387,10 +386,6 @@ public class FtdiSerialDriver extends UsbSerialDriver {
         if (result != 0) {
             throw new IOException("Setting parameters failed: result=" + result);
         }
-
-        mParity = parity;
-        mStopBits = stopBits;
-        mDataBits = dataBits;
     }
 
     private long[] convertBaudrate(int baudrate) {

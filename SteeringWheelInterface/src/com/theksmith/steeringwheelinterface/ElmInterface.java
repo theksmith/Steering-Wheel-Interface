@@ -27,9 +27,8 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager;
 /**
  * Wraps the serial device with methods to handle specific ELM based device communications.
  * 
- * @author Kristoffer Smith <stuff@theksmith.com>
+ * @author Kristoffer Smith <kristoffer@theksmith.com>
  */
-
 public class ElmInterface {
 	protected static final String TAG = ElmInterface.class.getSimpleName();
 	
@@ -124,11 +123,6 @@ public class ElmInterface {
 	public int getsStatus() {
 		return mStatus;
 	}
-	
-	
-	public int getDeviceID() {
-		return mDeviceID;
-	}
     
 	
 	/**
@@ -183,21 +177,42 @@ public class ElmInterface {
 		
 		HashMap<String, UsbDevice> deviceList = mUsbManager.getDeviceList();				
 		Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
+
+		List<UsbSerialDriver> deviceDrivers;
+		Iterator<UsbSerialDriver> deviceDriverIterator;
+		UsbSerialDriver deviceDriver;
 		
+		//iterate all usb devices
 		while(deviceIterator.hasNext() && deviceCounter <= mSettingDeviceNumber) {
 			device = deviceIterator.next();
-
-			if (device != null && UsbSerialProber.testIfSupported(device, FtdiSerialDriver.getSupportedDevices())) {
-				if (deviceCounter == mSettingDeviceNumber) {					
+			
+			if (device != null) {				
+				//probe the device to determine if it has an usb-serial-for-android supported drivers/interfaces
+				deviceDrivers = UsbSerialProber.probeSingleDevice(mUsbManager, device);
+				deviceDriverIterator = deviceDrivers.iterator();
+				
+				while(deviceDriverIterator.hasNext()){					
+					deviceDriver = deviceDriverIterator.next();
+					
+					//see if this driver/interface is an FTDI serial interface
+					if (deviceDriver instanceof FtdiSerialDriver) {
+						if (deviceCounter == mSettingDeviceNumber) {					
+							break;
+						} else {
+							deviceCounter++;
+						}
+					}
+				}
+				
+				if (deviceCounter == mSettingDeviceNumber) {
 					break;
-				} else {				
-					deviceCounter++;
 				}
 			}
 			
-			device = null;			
+			deviceDriver = null;
+			device = null;
 		}
-
+		
 		if (device == null) {
 			Log.w(TAG, "COULD NOT FIND SERIAL DEVICE NUMBER: " + mSettingDeviceNumber);	        
 		} else {
@@ -207,24 +222,24 @@ public class ElmInterface {
 				//get explicit permissions for device for when app is not launched from a usb connection intent
 				PendingIntent devicePermissionIntent = PendingIntent.getBroadcast(mAppContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
 				mUsbManager.requestPermission(device, devicePermissionIntent);
-			}				
+			}
         }
 	}
 	
 	
 	public void openDeviceFinish(UsbDevice device) {
-		try {		    		
+		try {
+			//TODO: update code flow to remove need for use of the deprecated acquire() method
     		mSerialDevice = UsbSerialProber.acquire(mUsbManager, device);
     		
     		if (mSerialDevice != null) {
-	        	Log.i(TAG, "SERIAL DEVICE FOUND: " + mSerialDevice);            	
-	        					
-	        	mSerialDevice.setParameters(mSettingBaud, UsbSerialDriver.DATABITS_8, UsbSerialDriver.STOPBITS_1, UsbSerialDriver.PARITY_NONE);
+	        	Log.i(TAG, "SERIAL DEVICE FOUND: " + mSerialDevice);
+	        	
 	        	mSerialDevice.open();
-	        	
+	        	mSerialDevice.setParameters(mSettingBaud, UsbSerialDriver.DATABITS_8, UsbSerialDriver.STOPBITS_1, UsbSerialDriver.PARITY_NONE);
+	        		        	
 	        	ioManagerReset();
-	        	
-	        	mDeviceID = mSerialDevice.getDevice().getDeviceId();
+
 	        	mStatus = STATUS_OPEN_STOPPED;
 	        	
 	        	deviceOpenEvent_Fire();
@@ -343,7 +358,11 @@ public class ElmInterface {
     	} else if (mCommand == "ATL1") {
     		if (!mResponse.contains(mCommand) || !mResponse.contains(">") || !mResponse.contains("OK")) return;
     		Log.d(TAG, "LINE BREAKS ON");
-    		sendCommand("ATH1");   
+    		sendCommand("ATS1");
+    	} else if (mCommand == "ATS1") {
+    		if (!mResponse.contains(mCommand) || !mResponse.contains(">") || !mResponse.contains("OK")) return;
+    		Log.d(TAG, "SPACES ON");
+    		sendCommand("ATH1");
     	} else if (mCommand == "ATH1") {
     		if (!mResponse.contains(mCommand) || !mResponse.contains(">") || !mResponse.contains("OK")) return;    		
     		Log.d(TAG, "HEADERS ON");

@@ -14,20 +14,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.widget.Toast;
+//import android.widget.Toast;
 
 
 /**
  * Foreground service that keeps running even when main activity is destroyed.
  * Manages the vehicle interface and provides status notifications.
  * 
- * @author Kristoffer Smith <stuff@theksmith.com>
+ * @author Kristoffer Smith <kristoffer@theksmith.com>
  */
 public class SteeringWheelInterfaceService extends Service {
 	protected static final String TAG = SteeringWheelInterfaceService.class.getSimpleName();	
@@ -55,19 +54,13 @@ public class SteeringWheelInterfaceService extends Service {
 				Boolean exitPrefValue = settings.getBoolean("scantool_detach_disconnect", exitPrefDefault);
 				
 				if (exitPrefValue) {
-					UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-
-					//verify this intent is regarding the specific device we opened, don't close another app's serial device
-					if (device != null && SteeringWheelInterfaceService.this.mCarInterface != null) {
-						if (device.getDeviceId() == SteeringWheelInterfaceService.this.mCarInterface.getDeviceID()) {
-							Intent exitIntent = new Intent(getBaseContext(), SteeringWheelInterfaceActivity.class);
-							exitIntent.setAction(Intent.ACTION_DELETE);
-							exitIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-							startActivity(exitIntent);
-							
-							Toast.makeText(getApplicationContext(), getString(R.string.msg_device_disconnected), Toast.LENGTH_SHORT).show();
-						}
-					}
+					Intent exitIntent = new Intent(getBaseContext(), SteeringWheelInterfaceActivity.class);
+					exitIntent.setAction(Intent.ACTION_DELETE);
+					exitIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+					startActivity(exitIntent);
+					
+					//TODO: make this and future toast notifications enabled/disabled via a setting
+					//Toast.makeText(getApplicationContext(), getString(R.string.msg_device_disconnected), Toast.LENGTH_SHORT).show();
 				} else {
 					carInterfaceStop();
 				}
@@ -125,11 +118,11 @@ public class SteeringWheelInterfaceService extends Service {
 		String baudDefault = getString(R.string.scantool_baud);
 		int baudValue = Integer.parseInt(settings.getString("scantool_baud", baudDefault));
 		mCarInterface.setBaudRate(baudValue);
-
-    	String deviceNumDefault = getString(R.string.scantool_device_number);
+		
+		String deviceNumDefault = getString(R.string.scantool_device_number);
 		int deviceNumValue = Integer.parseInt(settings.getString("scantool_device_number", deviceNumDefault));
 		mCarInterface.setDeviceNumber(deviceNumValue);
-
+		
 		String protocolCommandDefault = getString(R.string.scantool_protocol);
 		String protocolCommandValue = settings.getString("scantool_protocol", protocolCommandDefault);
 		mCarInterface.setProtocolCommand(protocolCommandValue);

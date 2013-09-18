@@ -3,6 +3,8 @@ package com.theksmith.steeringwheelinterface;
 import android.R.style;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
 
@@ -13,13 +15,18 @@ import android.preference.PreferenceFragment;
  * Opens the settings screen if called with Intent.ACTION_EDIT. 
  * Kills the background service and exits the app if called with Intent.ACTION_DELETE.
  * 
- * @author Kristoffer Smith <stuff@theksmith.com>
+ * @author Kristoffer Smith <kristoffer@theksmith.com>
  */
 public class SteeringWheelInterfaceActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+		
+		try {
+			PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+			setTitle(getTitle() + " " + info.versionName);
+		} catch (NameNotFoundException e) { }
+		
 		String action = getIntent().getAction(); 
 		
 		if (action == Intent.ACTION_EDIT) {

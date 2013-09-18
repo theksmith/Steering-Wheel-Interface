@@ -29,7 +29,7 @@
             android:key="scantool_baud"
             android:title="@string/scantool_baud_title" />
         <ListPreference
-            android:defaultValue="@string/scantool_protocol" 
+            android:defaultValue="@string/scantool_protocol"
             android:entries="@array/scantool_protocol_entries"
             android:entryValues="@array/scantool_protocol_values"
             android:key="scantool_protocol"
@@ -38,6 +38,6 @@
             android:defaultValue="@string/scantool_monitor_command"
             android:key="scantool_monitor_command"
             android:title="@string/scantool_monitor_command_title" />
-	</PreferenceCategory>
+    </PreferenceCategory>
 
 </PreferenceScreen>

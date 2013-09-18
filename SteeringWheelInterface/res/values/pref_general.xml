@@ -2,13 +2,13 @@
 
     <string name="category_actions_title">Actions</string>
     <string name="action_exit_title">Stop &amp; Exit</string>
-    <string name="action_exit_summary">Click this to stop monitoring and exit now</string>
+    <string name="action_exit_summary">Tap here to stop monitoring and exit</string>
     <string name="category_scantool_title">Scantool Device Settings</string>
-    <string name="scantool_detach_disconnect_title">Exit On Disconnect</string>
+    <string name="scantool_detach_disconnect_title">Exit On Scantool Disconnect</string>
     <string name="scantool_detach_disconnect">true</string>
     <string name="scantool_device_number">1</string>
-    <string name="scantool_device_number_title">Scantool Device Number</string>
-    <string name="scantool_baud">38400</string>
+    <string name="scantool_device_number_title">Use Scantool Number</string>
+    <string name="scantool_baud">115200</string>
     <string name="scantool_baud_title">Scantool Baud Rate</string>
     <string name="scantool_protocol">ATSP2</string>
     <string name="scantool_protocol_title">Scantool Protocol</string>
