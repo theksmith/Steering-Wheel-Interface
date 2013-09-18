@@ -14,20 +14,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.widget.Toast;
+//import android.widget.Toast;
 
 
 /**
  * Foreground service that keeps running even when main activity is destroyed.
  * Manages the vehicle interface and provides status notifications.
  * 
- * @author Kristoffer Smith <ksmith@theksmith.com>
+ * @author Kristoffer Smith <kristoffer@theksmith.com>
  */
 public class SteeringWheelInterfaceService extends Service {
 	protected static final String TAG = SteeringWheelInterfaceService.class.getSimpleName();	
@@ -60,7 +59,8 @@ public class SteeringWheelInterfaceService extends Service {
 					exitIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 					startActivity(exitIntent);
 					
-					Toast.makeText(getApplicationContext(), getString(R.string.msg_device_disconnected), Toast.LENGTH_SHORT).show();
+					//TODO: make this and future toast notifications enabled/disabled via a setting
+					//Toast.makeText(getApplicationContext(), getString(R.string.msg_device_disconnected), Toast.LENGTH_SHORT).show();
 				} else {
 					carInterfaceStop();
 				}

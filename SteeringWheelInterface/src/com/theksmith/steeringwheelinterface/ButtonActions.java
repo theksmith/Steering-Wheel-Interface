@@ -21,7 +21,7 @@ import android.view.KeyEvent;
  * Provides a central place to define which bus messages correspond to which buttons, and which buttons do what actions.
  * This class is a basic template that would most likely be overridden.
  * 
- * @author Kristoffer Smith <ksmith@theksmith.com>
+ * @author Kristoffer Smith <kristoffer@theksmith.com>
  */
 public class ButtonActions {
 	protected static final String TAG = ButtonActions.class.getSimpleName();
@@ -127,8 +127,10 @@ public class ButtonActions {
 	}
 		
 	
+	//TODO: most of these require root, is there a better way? how does Tasker do it?
+	
+
 	protected void btnMediaPause() throws Exception {
-		//TODO: this requires root, is there a better way? how does Tasker do it?
 		Runtime.getRuntime().exec("su -c input keyevent " + KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
     }
     
