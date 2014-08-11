@@ -1,3 +1,12 @@
+# DISCONTINUED (8/2014)
+
+Work on this project has been discontinued. It has been replaced with a new project named **CarBusInterface**: 
+
+https://github.com/theksmith/CarBusInterface 
+
+Everyone should move to the new project unless you require a USB based scantool (the new one uses Bluetooth scantools only thus far). The CarBusInterface project was created from scratch to be much more flexible and bug-free. It was also written observing more modern Android development best-practices.
+
+
 # Steering Wheel Interface
 
 Android application for interfacing with the steering wheel radio control buttons in certain Jeep/Chrysler/Dodge vehicles.
